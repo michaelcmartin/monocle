@@ -6,11 +6,13 @@
 # Compiled Dynamic libraries
 *.so
 *.dylib
+bin/*
 
 # Compiled Static libraries
 *.lai
 *.la
 *.a
+lib/*
 
 # backup files
 *.bak
