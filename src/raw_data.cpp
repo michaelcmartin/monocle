@@ -180,6 +180,18 @@ mncl_release_raw(MNCL_RAW *raw)
     monocle::resource::ResourceManager::instance()->release(raw);
 }
 
+int
+mncl_raw_size(MNCL_RAW *raw)
+{
+    return raw->size;
+}
+
+unsigned char
+mncl_raw_u8(MNCL_RAW *raw, int offset)
+{
+    return raw->data[offset];
+}
+
 unsigned short
 mncl_raw_u16le(MNCL_RAW *raw, int offset)
 {
@@ -234,6 +246,12 @@ mncl_raw_u64be(MNCL_RAW *raw, int offset)
            ((unsigned long)raw->data[offset+5] << 16) | 
            ((unsigned long)raw->data[offset+6] << 8)  |
            raw->data[offset+7];
+}
+
+char
+mncl_raw_s8(MNCL_RAW *raw, int offset)
+{
+    return (char)raw->data[offset];
 }
 
 short

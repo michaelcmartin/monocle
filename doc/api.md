@@ -55,6 +55,10 @@ Pull some raw data out of the search path, identified by the resource name. Thes
 Any acquired raw data must be later released or memory will leak. That said, under the hood this is a reference-counted implementation, so acquiring the same resource twice will return the same structure, and that structure will not be deallocated until it is released twice.
 
 ```C
+int mncl_raw_size(MNCL_RAW *raw);
+
+char mncl_raw_s8(MNCL_RAW *raw, int offset);
+unsigned char mncl_raw_u8(MNCL_RAW *raw, int offset);
 short mncl_raw_s16le(MNCL_RAW *raw, int offset);
 short mncl_raw_s16be(MNCL_RAW *raw, int offset);
 unsigned short mncl_raw_u16le(MNCL_RAW *raw, int offset);
@@ -73,7 +77,7 @@ double mncl_raw_f64le(MNCL_RAW *raw, int offset);
 double mncl_raw_f64be(MNCL_RAW *raw, int offset);
 ```
 
-These let you pull primitive data types out of the raw bytes in a platform-independent way. If you have some kind of custom binary resource, you'll be using these a lot. The codes at the end of each function name are:
+These are accessors, that allow programmatic access to the contents of a raw data block. You can query the size without needing to represent the struct inside a linked language, or you can pull primitive data types out of the raw bytes in a platform-independent way. If you have some kind of custom binary resource, you'll be using these a lot. The codes at the end of each function name are:
 
 * s/u/f for signed/unsigned/floating point
 * A number indicating the number of bits to read

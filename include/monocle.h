@@ -22,6 +22,10 @@ int mncl_add_resource_zipfile(const char *pathname);
 MNCL_RAW *mncl_acquire_raw(const char *resource_name);
 void mncl_release_raw(MNCL_RAW *raw);
 
+/* Accessors and decoders */
+int mncl_raw_size(MNCL_RAW *raw);
+char mncl_raw_s8(MNCL_RAW *raw, int offset);
+unsigned char mncl_raw_u8(MNCL_RAW *raw, int offset);
 short mncl_raw_s16le(MNCL_RAW *raw, int offset);
 short mncl_raw_s16be(MNCL_RAW *raw, int offset);
 unsigned short mncl_raw_u16le(MNCL_RAW *raw, int offset);
