@@ -1,12 +1,14 @@
 CFLAGS = $(shell sdl-config --cflags) -Iinclude -O2
 CCFLAGS = $(CFLAGS)
+DEMOLDFLAGS = -Wl,-rpath,. -Lbin -lmonocle $(shell sdl-config --libs)
 
 CPPOBJS = $(patsubst %.cpp,%.o,$(wildcard src/*.cpp))
 CCOBJS = $(patsubst %.cc,%.o,$(wildcard src/*.cc))
 COBJS = $(patsubst %.c,%.o,$(wildcard src/*.c))
 OBJS = $(CPPOBJS) $(CCOBJS) $(COBJS)
 
-all: lib/libmonocle.a bin/libmonocle.so bin/earthball
+
+all: dirs | lib/libmonocle.a bin/libmonocle.so bin/earthball bin/rawtest
 
 lib/libmonocle.a: lib $(OBJS)
 	ar cr lib/libmonocle.a $(OBJS)
@@ -15,16 +17,16 @@ bin/libmonocle.so: bin $(OBJS)
 	g++ -o bin/libmonocle.so -shared $(CCFLAGS) $(OBJS) $(shell sdl-config --libs) -lSDL_mixer -lSDL_image -lz
 
 bin/earthball: bin/libmonocle.so demo/earthball.c bin/earthball-res.zip
-	gcc -o bin/earthball $(CFLAGS) demo/earthball.c -Wl,-rpath,. -Lbin -lmonocle $(shell sdl-config --libs)
+	gcc -o bin/earthball $(CFLAGS) demo/earthball.c $(DEMOLDFLAGS)
+
+bin/rawtest: bin/libmonocle.so demo/rawtest.c
+	cp demo/resources/rawtest.dat bin/ && gcc -o bin/rawtest $(CFLAGS) demo/rawtest.c $(DEMOLDFLAGS)
 
 bin/earthball-res.zip: demo/resources/earth.png demo/resources/march.it
 	cd demo/resources && zip ../../bin/earthball-res.zip earth.png march.it
 
-bin:
-	mkdir bin
-
-lib:
-	mkdir lib
+dirs:
+	mkdir -p bin && mkdir -p lib
 
 clean:
 	rm -rf bin lib $(OBJS)
