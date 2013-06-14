@@ -197,10 +197,12 @@ MNCL_EVENT *mncl_event_next(void);
 void mncl_event_pop(void);
 
 MNCL_EVENT_TYPE mncl_event_type(MNCL_EVENT *evt);
+int mncl_event_subscriber(MNCL_EVENT *evt);
 MNCL_KEY mncl_event_key(MNCL_EVENT *evt);
 int mncl_event_mouse_x(MNCL_EVENT *evt);
 int mncl_event_mouse_y(MNCL_EVENT *evt);
 int mncl_event_mouse_button(MNCL_EVENT *evt);
+int mncl_event_joy_stick(MNCL_EVENT *evt);
 int mncl_event_joy_index(MNCL_EVENT *evt);
 int mncl_event_joy_value(MNCL_EVENT *evt);
 ```
