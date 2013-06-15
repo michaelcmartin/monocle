@@ -12,10 +12,10 @@ test_string(const char *expected)
 {
     MNCL_RAW *raw = mncl_acquire_raw("shadow.txt");
     if (raw) {
-        printf ("Expected \"%s\", got \"%s\" (%s)\n", expected, raw->data, strcmp(raw->data, expected) ? (++errors, "Not OK") : "OK");
+        printf("Expected \"%s\", got \"%s\" (%s)\n", expected, raw->data, strcmp(raw->data, expected) ? (++errors, "Not OK") : "OK");
         mncl_release_raw(raw);
     } else {
-        printf ("Could not find shadow.txt\n");
+        printf("Could not find shadow.txt\n");
         ++errors;
     }
 }
@@ -30,6 +30,8 @@ main(int argc, char **argv)
     test_string("ZIP");
     raw = mncl_acquire_raw("rawtest.dat");
     printf("Size of: char: %d, short: %d, int: %d, long: %d\n", sizeof(char), sizeof(short), sizeof(int), sizeof(long));
+    printf("Size of data: Expected %d, got %d (%s)\n", mncl_raw_size(raw), 24, (mncl_raw_size(raw) == 24) ? "OK" : (++errors, "Not OK"));
+
     TEST(mncl_raw_u8, 1, 0xf6, "%d");
     TEST(mncl_raw_s8, 1, 0xf6 - 0x100, "%d");
     TEST(mncl_raw_u16be, 1, 0xf6e9, "%d");
