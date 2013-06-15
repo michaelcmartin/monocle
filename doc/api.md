@@ -41,9 +41,11 @@ int mncl_add_resource_directory(const char *pathname);
 int mncl_add_resource_zipfile(const char *pathname);
 ```
 
-These add directories or zip files to the component's search path. They use the name "resource" here because the client will generally be using these functions alongside the Resource Component in layer 2. The argument names the directory or zip file to use.
+These add directories or zip files to the front of the component's search path. They use the name "resource" here because the client will generally be using these functions alongside the Resource Component in layer 2. The argument names the directory or zip file to use.
 
 Both functions return zero on success, or an error code on failure.
+
+Because they add to the *front* of the search path, resource locations added later override stuff added earlier. So, the protocol is to add core data first, and then add-ons.
 
 ```C
 MNCL_RAW *mncl_acquire_raw(const char *resource_name);
@@ -316,8 +318,13 @@ Above this level the spec starts getting vague until I get here, but:
 
 # Layer 3 #
 
-This is where the game logic lives. This will probably be some kind of callback-based publish/subscribe event-handling model, which means that the code that actually dispatches stuff out based on SDL events will live here.
+This is where the game logic lives. It will involve "entities", which
+are a special kind of subscriber that carries some additional state
+(position, velocity, hitbox, etc). These will be able to respond to
+additional messages regarding the gamestate (draw, update, collision,
+etc.) The subscriber ID can be used by client systems to link these
+things into their own object systems.
 
-This will be the largest challenge, since C will want us to be exporting this as function pointers, and we will probably want to be using C++ objects in the client code. I'm going to be cross if embedding code in Scheme ends up easier than it would be in C++.
-
-In the extreme case, Layer 3 won't even be part of Monocle at all; actually having a game engine might be the job of the client. I don't think it will come to that, though.
+To make this not be a tremendous pain to use, some kind of inheritance
+system will be necessary; prototypal inheritance is probably best
+here, since individual instances may need slight customization.

@@ -3,6 +3,7 @@
 #include <string.h>
 #include <map>
 #include <vector>
+#include <list>
 #include <string>
 #include "exception.h"
 #include "raw_data_internal.h"
@@ -11,7 +12,7 @@ namespace monocle {
     namespace resource {
         typedef std::map<std::string, MNCL_RAW *> ResMap;
         typedef std::map<MNCL_RAW *, std::string> ReverseResMap;
-        typedef std::vector<ResourceProvider *> ProviderVec;
+        typedef std::list<ResourceProvider *> Providers;
 
         class ResourceManager {
         public:
@@ -23,7 +24,7 @@ namespace monocle {
 
             static ResourceManager *instance();
         private:
-            ProviderVec providers_;
+            Providers providers_;
             ResMap locked_resources_;
             ReverseResMap reverse_map_;
             std::map<std::string, int> refcounts_;
@@ -58,12 +59,12 @@ namespace monocle {
         void
         ResourceManager::addDirectoryProvider(const std::string &path)
         {
-            providers_.push_back(new DirectoryProvider(path));
+            providers_.push_front(new DirectoryProvider(path));
         }
 
         void ResourceManager::addZipProvider(const std::string &path)
         {
-            providers_.push_back(new ZipFileProvider(path));
+            providers_.push_front(new ZipFileProvider(path));
         }
 
         ResourceManager* ResourceManager::instance_ = NULL;
@@ -78,7 +79,7 @@ namespace monocle {
 
         ResourceManager::~ResourceManager()
         {
-            for (ProviderVec::iterator i = providers_.begin(); i != providers_.end(); ++i) {
+            for (Providers::iterator i = providers_.begin(); i != providers_.end(); ++i) {
                 delete *i;
             }
             for (ResMap::iterator i = locked_resources_.begin(); i != locked_resources_.end(); ++i) {
@@ -93,7 +94,7 @@ namespace monocle {
             ResMap::iterator it = locked_resources_.find(resource);
             if (it == locked_resources_.end()) {
                 bool success = false;
-                for (ProviderVec::iterator i = providers_.begin(); i != providers_.end(); ++i) {
+                for (Providers::iterator i = providers_.begin(); i != providers_.end(); ++i) {
                     try {
                         std::vector<unsigned char> contents;
                         if ((*i)->get(resource, contents)) {

@@ -25,8 +25,9 @@ main(int argc, char **argv)
 {
     MNCL_RAW *raw, *raw2;
     mncl_add_resource_directory("./");
-    mncl_add_resource_zipfile("rawtest.zip");
     test_string("RAW");
+    mncl_add_resource_zipfile("rawtest.zip");
+    test_string("ZIP");
     raw = mncl_acquire_raw("rawtest.dat");
     printf("Size of: char: %d, short: %d, int: %d, long: %d\n", sizeof(char), sizeof(short), sizeof(int), sizeof(long));
     TEST(mncl_raw_u8, 1, 0xf6, "%d");
