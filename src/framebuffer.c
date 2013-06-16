@@ -22,6 +22,10 @@ mncl_config_video(int width, int height, int fullscreen, int flags)
     }
     is_fullscreen = fullscreen;
     clear_color = SDL_MapRGB(screen->format, 0, 0, 0);
+    /* TODO: We should also normalize all the spritesheets we know
+     * about, but we can't do that until the resource manager is
+     * done */
+    return 0;
 }
 
 int
@@ -33,7 +37,28 @@ mncl_is_fullscreen(void)
 int
 mncl_toggle_fullscreen(void)
 {
-    // TODO: Just fail at it for now, to heck with fullscreen at first
+    /* We are not guaranteed that changing fullscreen status keeps the
+     * colormap the same, so we will need to recompute the clear
+     * color. */
+    Uint8 r, g, b;
+    int w, h;
+    if (!screen) {
+        return is_fullscreen;
+    }
+    SDL_GetRGB(clear_color, screen->format, &r, &g, &b);
+    w = screen->w;
+    h = screen->h;
+    is_fullscreen = 1-is_fullscreen;
+    mncl_config_video(w, h, is_fullscreen, 0);
+    if (!screen) {
+        /* Revert if it didn't work. This should never realistically fail. */
+        is_fullscreen = 1-is_fullscreen;
+        mncl_config_video(w, h, is_fullscreen, 0);
+    }
+    if (screen) {
+        mncl_set_clear_color(r, g, b);
+    }
+
     return is_fullscreen;
 }
 
@@ -95,12 +120,29 @@ mncl_alloc_spritesheet(const char *resource_name)
         mncl_release_raw(raw);
         return NULL;
     }
+    mncl_normalize_spritesheet(spritesheet);
+    mncl_release_raw(raw);
+    return spritesheet;
+}
+
+void
+mncl_normalize_spritesheet(MNCL_SPRITESHEET *spritesheet)
+{
+    if (!spritesheet) {
+        /* Can't normalize if there's nothing to normalize */
+        return;
+    }
+    if (!screen) {
+        /* Can't normalize if there's nothing to normalize to */
+        return;
+    }
+    if (spritesheet->used != spritesheet->core) {
+        SDL_FreeSurface(spritesheet->used);
+    }
     spritesheet->used = SDL_DisplayFormatAlpha(spritesheet->core);
     if (!spritesheet->used) {
         spritesheet->used = spritesheet->core;
     }
-    mncl_release_raw(raw);
-    return spritesheet;
 }
 
 void

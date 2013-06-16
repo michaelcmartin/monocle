@@ -65,6 +65,8 @@ typedef struct struct_MNCL_SPRITESHEET MNCL_SPRITESHEET;
 MNCL_SPRITESHEET *mncl_alloc_spritesheet(const char *resource_name);
 void mncl_free_spritesheet(MNCL_SPRITESHEET *spritesheet);
 
+void mncl_normalize_spritesheet(MNCL_SPRITESHEET *spritesheet);
+
 void mncl_draw_from_spritesheet(MNCL_SPRITESHEET *spritesheet,
                                 int x, int y,
                                 int my_x, int my_y,

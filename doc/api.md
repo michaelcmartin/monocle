@@ -247,6 +247,14 @@ void mncl_free_spritesheet(MNCL_SPRITESHEET *spritesheet);
 Lifecycle managers. These handle the interactions with layer 0 for you. Resources must correspond to .PNG files.
 
 ```C
+void mncl_normalize_spritesheet(MNCL_SPRITESHEET *spritesheet);
+```
+
+Prepares the spritesheet for rendering on the screen. Since image formats don't necessarily match the most efficient format for blitting to the end user's screen, this step makes a pre-cached version that renders faster.
+
+This happens automatically if a spritesheet is loaded after the video is configured, and if the spritesheet is managed by the resource component in layer 2, it will happen automatically all the time. As such, end users generally won't have to worry about this call.
+
+```C
 void mncl_draw_from_spritesheet(MNCL_SPRITESHEET *spritesheet,
                                 int x, int y,
                                 int my_x, int my_y,
