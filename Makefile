@@ -22,8 +22,8 @@ bin/earthball: bin/libmonocle.so demo/earthball.c bin/earthball-res.zip
 bin/rawtest: bin/libmonocle.so demo/rawtest.c
 	cp demo/resources/rawtest.zip demo/resources/shadow.txt bin/ && gcc -o bin/rawtest $(CFLAGS) demo/rawtest.c $(DEMOLDFLAGS)
 
-bin/earthball-res.zip: demo/resources/earth.png demo/resources/march.it
-	cd demo/resources && zip ../../bin/earthball-res.zip earth.png march.it
+bin/earthball-res.zip: demo/resources/earth.png demo/resources/march.it demo/resources/torpedo.wav
+	cd demo/resources && zip ../../bin/earthball-res.zip earth.png march.it torpedo.wav
 
 dirs:
 	mkdir -p bin && mkdir -p lib

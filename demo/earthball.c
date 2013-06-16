@@ -24,6 +24,7 @@ int
 main(int argc, char **argv)
 {
     MNCL_SPRITESHEET *earth;
+    MNCL_SFX *sfx;
     int done, frame, i, countdown, music_on, bg, music_volume;
     Uint32 targetTime;
     struct globe globes[16];
@@ -41,6 +42,7 @@ main(int argc, char **argv)
     mncl_add_resource_zipfile("earthball-res.zip");
 
     earth = mncl_alloc_spritesheet("earth.png");
+    sfx = mncl_alloc_sfx("torpedo.wav");
     mncl_play_music("march.it", 2000);
 
     done = 0;
@@ -123,6 +125,12 @@ main(int argc, char **argv)
                     mncl_music_volume(music_volume);
                     printf("Music volume now: %d\n", music_volume);
                     break;
+                case SDLK_SPACE:
+                    mncl_play_sfx(sfx, 128);
+                    break;
+                case SDLK_LSHIFT:
+                    mncl_play_sfx(sfx, 64);
+                    break;
                 default:
                     break;
                 }
@@ -147,6 +155,7 @@ main(int argc, char **argv)
     }
 
     mncl_stop_music();
+    mncl_free_sfx(sfx);
     mncl_free_spritesheet(earth);
     mncl_uninit();
     return 0;

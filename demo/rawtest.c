@@ -29,7 +29,7 @@ main(int argc, char **argv)
     mncl_add_resource_zipfile("rawtest.zip");
     test_string("ZIP");
     raw = mncl_acquire_raw("rawtest.dat");
-    printf("Size of: char: %d, short: %d, int: %d, long: %d\n", sizeof(char), sizeof(short), sizeof(int), sizeof(long));
+    printf("Size of: char: %zd, short: %zd, int: %zd, long: %zd\n", sizeof(char), sizeof(short), sizeof(int), sizeof(long));
     printf("Size of data: Expected %d, got %d (%s)\n", mncl_raw_size(raw), 24, (mncl_raw_size(raw) == 24) ? "OK" : (++errors, "Not OK"));
 
     TEST(mncl_raw_u8, 1, 0xf6, "%d");
@@ -38,10 +38,10 @@ main(int argc, char **argv)
     TEST(mncl_raw_s16be, 1, 0xf6e9 - 0x10000, "%d");
     TEST(mncl_raw_u16le, 1, 0xe9f6, "%d");
     TEST(mncl_raw_s16le, 1, 0xe9f6 - 0x10000, "%d");
-    TEST(mncl_raw_u32be, 6, (long)0x80bf3ff0, "%ld");
-    TEST(mncl_raw_u32le, 6, (long)0xf03fbf80, "%ld");
-    TEST(mncl_raw_s32be, 6, (long)0x80bf3ff0 - 0x100000000, "%d");
-    TEST(mncl_raw_s32le, 6, 0xf03fbf80L - 0x100000000L, "%d");
+    TEST(mncl_raw_u32be, 6, 0x80bf3ff0, "%u");
+    TEST(mncl_raw_u32le, 6, 0xf03fbf80, "%u");
+    TEST(mncl_raw_s32be, 6, (int)(0x80bf3ff0L - 0x100000000L), "%d");
+    TEST(mncl_raw_s32le, 6, (int)(0xf03fbf80L - 0x100000000L), "%d");
     TEST(mncl_raw_u64le, 15, 0x8472916872b02100L, "%lu");
     TEST(mncl_raw_s64le, 15, 0x8472916872b02100L, "%ld");
     TEST(mncl_raw_u64be, 1, 0xf6e979000080bf3fL, "%lu");
