@@ -104,8 +104,8 @@ main(int argc, char **argv)
                     }
                     break;
                 case SDLK_t:
-                    printf("Toggled fullscreen to: %s", mncl_toggle_fullscreen() ? "on" : "off");
-                    printf("Fullscreen reported as: %s", mncl_is_fullscreen() ? "on" : "off");
+                    printf("Toggled fullscreen to: %s\n", mncl_toggle_fullscreen() ? "on" : "off");
+                    printf("Fullscreen reported as: %s\n", mncl_is_fullscreen() ? "on" : "off");
                     break;
                 case SDLK_UP:
                     music_volume += 16;
