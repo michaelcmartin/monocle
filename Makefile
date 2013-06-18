@@ -14,7 +14,7 @@ lib/libmonocle.a: lib $(OBJS)
 	ar cr lib/libmonocle.a $(OBJS)
 
 bin/libmonocle.so: bin $(OBJS)
-	g++ -o bin/libmonocle.so -shared $(CCFLAGS) $(OBJS) $(shell sdl-config --libs) -lSDL_mixer -lSDL_image -lz
+	g++ -o bin/libmonocle.so -shared $(CCFLAGS) -fvisibility=hidden -fvisibility-inlines-hidden $(OBJS) $(shell sdl-config --libs) -lSDL_mixer -lSDL_image -lz
 
 bin/earthball: bin/libmonocle.so demo/earthball.c bin/earthball-res.zip
 	gcc -o bin/earthball $(CFLAGS) demo/earthball.c $(DEMOLDFLAGS)
@@ -38,13 +38,13 @@ depend:
 	makedepend -Y. -Iinclude src/*.c src/*.cc src/*.cpp 2> /dev/null
 
 $(CPPOBJS): %.o: %.cpp
-	g++ -o $@ -c $(CCFLAGS) -fPIC $<
+	g++ -o $@ -c $(CCFLAGS) -fvisibility=hidden -fvisibility-inlines-hidden -DMONOCLE_EXPORTS -fPIC $<
 
 $(CCOBJS): %.o: %.cc
-	g++ -o $@ -c $(CCFLAGS) -fPIC $<
+	g++ -o $@ -c $(CCFLAGS) -fvisibility=hidden -fvisibility-inlines-hidden -DMONOCLE_EXPORTS -fPIC $<
 
 $(COBJS): %.o: %.c
-	gcc -o $@ -c $(CFLAGS) -fPIC $<
+	gcc -o $@ -c $(CFLAGS) -fvisibility=hidden -DMONOCLE_EXPORTS -fPIC $<
 # DO NOT DELETE
 
 src/audio.o: include/monocle.h
