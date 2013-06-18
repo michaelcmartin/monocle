@@ -49,6 +49,7 @@ int mncl_config_video (int width, int height, int fullscreen, int flags);
 int mncl_is_fullscreen(void);
 int mncl_toggle_fullscreen(void);
 void mncl_set_clear_color(unsigned char r, unsigned char g, unsigned char b);
+void mncl_hide_mouse_in_fullscreen(int val);
 
 void mncl_begin_frame(void);
 void mncl_end_frame(void);

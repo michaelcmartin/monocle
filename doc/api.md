@@ -122,6 +122,12 @@ void mncl_set_clear_color(unsigned char r, unsigned char g, unsigned char b);
 Sets the color to clear the screen to at the beginning of every frame. The clear color defaults to black (#000000).
 
 ```C
+void mncl_hide_mouse_in_fullscreen(int val);
+```
+
+Sets a boolean value regarding whether or not the mouse cursor should be invisible when in fullscreen mode. Defaults to false (that is, the mouse is not hidden).
+
+```C
 void mncl_begin_frame(void);
 void mncl_end_frame(void);
 ```

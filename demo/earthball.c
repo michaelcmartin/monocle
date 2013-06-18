@@ -52,9 +52,11 @@ main(int argc, char **argv)
     bg = 0;
     music_volume = 128;
 
+    instructions();
+    mncl_hide_mouse_in_fullscreen(1);
+
     targetTime = SDL_GetTicks() + 40; // Target FPS is 25
 
-    instructions();
     while (!done) {
         SDL_Event e;
 
