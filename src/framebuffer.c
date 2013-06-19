@@ -93,8 +93,7 @@ mncl_end_frame(void)
 
 void
 mncl_draw_rect(int x, int y, int w, int h, 
-               unsigned char r, unsigned char g, unsigned char b, 
-               unsigned char a)
+               unsigned char r, unsigned char g, unsigned char b)
 {
     SDL_Rect rect;
     Uint32 col;
@@ -102,7 +101,7 @@ mncl_draw_rect(int x, int y, int w, int h,
     rect.y = y;
     rect.w = w;
     rect.h = h;
-    col = SDL_MapRGBA(screen->format, r, g, b, a);
+    col = SDL_MapRGB(screen->format, r, g, b);
     SDL_FillRect(screen, &rect, col);
 }
 

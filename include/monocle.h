@@ -71,8 +71,7 @@ extern MONOCULAR void mncl_begin_frame(void);
 extern MONOCULAR void mncl_end_frame(void);
 
 extern MONOCULAR void mncl_draw_rect(int x, int y, int w, int h, 
-                    unsigned char r, unsigned char g, unsigned char b, 
-                    unsigned char a);
+                                     unsigned char r, unsigned char g, unsigned char b);
 
 /* Spritesheet Component */
 

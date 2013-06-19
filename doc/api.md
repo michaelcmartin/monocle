@@ -137,10 +137,9 @@ These two calls bracket the frame you draw. They should not be called more than 
 ```C
 void mncl_draw_rect(int x, int y, int w, int h, 
                     unsigned char r, unsigned char g, unsigned char b,
-                    unsigned char a);
 ```
 
-Draw a filled rectangle at (x, y) of width (w, h) of color (r, g, b) with alpha a. Colors are bytes; an alpha of 255 is opaque.
+Draw a filled rectangle at (x, y) of width (w, h) of color (r, g, b). Colors are bytes.
 
 ## Event Dispatch Component ##
 

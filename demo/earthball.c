@@ -61,6 +61,7 @@ main(int argc, char **argv)
         SDL_Event e;
 
         mncl_begin_frame();
+        mncl_draw_rect(256, 112, 256, 256, 128, 128, 128);
         for (i = 0; i < 16; ++i) {
             mncl_draw_from_spritesheet(earth, globes[i].x, globes[i].y, (globes[i].frame % 8) * 64, (globes[i].frame / 8) * 64, 64, 64);
         }
