@@ -130,6 +130,7 @@ mncl_alloc_spritesheet(const char *resource_name)
         mncl_release_raw(raw);
         return NULL;
     }
+    spritesheet->used = NULL;
     mncl_normalize_spritesheet(spritesheet);
     mncl_release_raw(raw);
     return spritesheet;
@@ -146,7 +147,7 @@ mncl_normalize_spritesheet(MNCL_SPRITESHEET *spritesheet)
         /* Can't normalize if there's nothing to normalize to */
         return;
     }
-    if (spritesheet->used != spritesheet->core) {
+    if (spritesheet->used && spritesheet->used != spritesheet->core) {
         SDL_FreeSurface(spritesheet->used);
     }
     spritesheet->used = SDL_DisplayFormatAlpha(spritesheet->core);
