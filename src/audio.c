@@ -147,6 +147,7 @@ mncl_free_sfx(MNCL_SFX *sfx)
     }
     Mix_FreeChunk(sfx->chunk);
     mncl_release_raw(sfx->raw);
+    free(sfx);
 }
 
 
