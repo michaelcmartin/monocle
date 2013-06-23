@@ -1,4 +1,4 @@
-CFLAGS = $(shell sdl-config --cflags) -Iinclude -O2
+CFLAGS = $(shell sdl-config --cflags) -Iinclude -O2 -Wall
 CCFLAGS = $(CFLAGS)
 DEMOLDFLAGS = -Wl,-rpath,. -Lbin -lmonocle $(shell sdl-config --libs)
 

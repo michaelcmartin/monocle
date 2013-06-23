@@ -44,7 +44,7 @@ namespace {
         }
         fseek(f, -minstart, SEEK_END);
         std::vector<unsigned char> buf(minstart);
-        if (fread(&buf[0], 1, minstart, f) != minstart) {
+        if ((long)fread(&buf[0], 1, minstart, f) != minstart) {
             throw monocle::panic("Error reading file tail");
         }
         int state = 0;
@@ -113,7 +113,7 @@ namespace monocle {
                 loadSkip(fp_, 8);
                 e.offset = loadInt(fp_);
                 std::vector<char> buf(fnameLen);
-                if (fread (&buf[0], 1, fnameLen, fp_) != fnameLen) {
+                if ((long)fread (&buf[0], 1, fnameLen, fp_) != fnameLen) {
                     throw monocle::panic("Can't read directory information");
                 }
                 index_[std::string(&buf[0], fnameLen)] = e;
@@ -226,7 +226,7 @@ namespace monocle {
                     throw monocle::panic("CRC check failed: file corrupt");
                 }
             } else {
-                if (fread(&out[0], 1, it->second.compressedSize, fp_) != it->second.compressedSize) {
+                if ((long)fread(&out[0], 1, it->second.compressedSize, fp_) != it->second.compressedSize) {
                     throw monocle::panic("Can't read resource \"" + resourceName + "\"");
                 }
                 unsigned long crc = crc32(0L, Z_NULL, 0);

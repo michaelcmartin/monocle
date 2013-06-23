@@ -25,7 +25,7 @@ main(int argc, char **argv)
 {
     MNCL_SPRITESHEET *earth;
     MNCL_SFX *sfx;
-    int done, frame, i, countdown, music_on, bg, music_volume;
+    int done, i, countdown, music_on, bg, music_volume;
     Uint32 targetTime;
     struct globe globes[16];
 
@@ -46,7 +46,6 @@ main(int argc, char **argv)
     mncl_play_music("march.it", 2000);
 
     done = 0;
-    frame = 0;
     countdown = 0;
     music_on = 1;
     bg = 0;

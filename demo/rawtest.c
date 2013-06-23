@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include <stdint.h>
+#include <string.h>
 #include "monocle.h"
 
 int errors = 0;
@@ -12,7 +12,7 @@ test_string(const char *expected)
 {
     MNCL_RAW *raw = mncl_acquire_raw("shadow.txt");
     if (raw) {
-        printf("Expected \"%s\", got \"%s\" (%s)\n", expected, raw->data, strcmp(raw->data, expected) ? (++errors, "Not OK") : "OK");
+        printf("Expected \"%s\", got \"%s\" (%s)\n", expected, (char *)raw->data, strcmp((char *)raw->data, expected) ? (++errors, "Not OK") : "OK");
         mncl_release_raw(raw);
     } else {
         printf("Could not find shadow.txt\n");
