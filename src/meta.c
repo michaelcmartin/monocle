@@ -1,6 +1,7 @@
 #include <SDL.h>
 #include <SDL_mixer.h>
 #include "monocle.h"
+#include "monocle_internal.h"
 
 void
 mncl_init(void)
@@ -17,4 +18,5 @@ mncl_uninit()
     Mix_CloseAudio();
     Mix_Quit();
     SDL_Quit();
+    mncl_uninit_raw_system();
 }

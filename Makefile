@@ -49,7 +49,6 @@ $(COBJS): %.o: %.c
 
 src/audio.o: include/monocle.h
 src/framebuffer.o: include/monocle.h
-src/meta.o: include/monocle.h
-src/raw_data.o: src/exception.h src/raw_data_internal.h include/monocle.h
-src/raw_from_zipfile.o: src/raw_data_internal.h include/monocle.h
-src/raw_from_zipfile.o: src/exception.h
+src/meta.o: include/monocle.h src/monocle_internal.h
+src/raw_data.o: include/monocle.h src/tree.h
+src/tree.o: src/tree.h

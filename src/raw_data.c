@@ -4,7 +4,9 @@
 #include <string.h>
 #include <zlib.h>
 #include "monocle.h"
+#include "tree.h"
 
+/* Local utility functions */
 static int
 decodeInt(unsigned char *p) 
 {
@@ -65,6 +67,7 @@ fstrncmp(FILE *f, int n, const char *s)
     return result;
 }
 
+/* Zipfile seeking functions */
 static int
 seek_to_central_directory(FILE *f)
 {
@@ -185,6 +188,7 @@ find_file_in_zip(FILE *f, const char *path, struct zip_entry *ze)
     return 0;
 }
 
+/* Core resource-extraction functions */
 MNCL_RAW *
 zipfile_get_resource(const char *pathname, const char *resourcename)
 {
@@ -344,3 +348,301 @@ filesystem_get_resource(const char *pathbase, const char *resourcename)
     fclose (f);
     return result;
 }
+
+/* Data structures for handling the resource manager */
+
+typedef enum { PROVIDER_DIRECTORY, PROVIDER_ZIPFILE, NUM_PROVIDER_TYPES } PROVIDER_TYPE;
+
+struct provider {
+    struct provider *next;
+    PROVIDER_TYPE tag;
+    char path[1];
+};
+
+struct resmap_node {
+    TREE_NODE header;
+    const char *resname;
+    MNCL_RAW *resource;
+    int refcount;
+};
+
+static struct provider *providers = NULL;
+static TREE locked_resources = { NULL };
+static TREE reverse_map = { NULL };
+
+static int
+rescmp(TREE_NODE *a, TREE_NODE *b)
+{
+    return strcmp(((struct resmap_node *)a)->resname, ((struct resmap_node *)b)->resname);
+}
+
+static int
+ptrcmp(TREE_NODE *a, TREE_NODE *b)
+{
+    return (intptr_t)((struct resmap_node *)a)->resource - (intptr_t)((struct resmap_node *)b)->resource;
+}
+
+/* Not thread safe. */
+static struct provider *
+make_provider(const char *path, PROVIDER_TYPE ptype)
+{
+    struct provider *newprov = malloc(sizeof(struct provider)+strlen(path));
+    if (!newprov) {
+        return NULL;
+    }
+    newprov->tag = ptype;
+    strcpy(newprov->path, path);
+    newprov->next = providers;
+    providers = newprov;
+    return newprov;
+}
+
+/* Used elsewhere in the library, but not exported */
+void
+mncl_uninit_raw_system(void)
+{
+    while (providers) {
+        struct provider *next = providers->next;
+        printf ("Unmounting %s: %s\n", providers->tag == PROVIDER_DIRECTORY ? "directory" : "zipfile", providers->path);
+        free(providers);
+        providers = next;
+    }
+}
+
+/* The actual, exported functions */
+int
+mncl_add_resource_directory(const char *path)
+{
+    return make_provider(path, PROVIDER_DIRECTORY) ? 1 : 0;
+}
+
+int
+mncl_add_resource_zipfile(const char *path)
+{
+    return make_provider(path, PROVIDER_ZIPFILE) ? 1 : 0;
+}
+
+MNCL_RAW *
+mncl_acquire_raw(const char *resource)
+{
+    MNCL_RAW *result = NULL;
+    struct resmap_node seek, *found = NULL;
+    struct provider *i = providers;
+    char *duped_name;
+    seek.resname = resource;
+    found = (struct resmap_node *)tree_find(&locked_resources, (TREE_NODE *)&seek, rescmp);
+    if (found) {
+        ++found->refcount;
+        return found->resource;
+    }
+    while (i && !result) {
+        switch (i->tag) {
+        case PROVIDER_DIRECTORY:
+            result = filesystem_get_resource(i->path, resource);
+            break;
+        case PROVIDER_ZIPFILE:
+            result = zipfile_get_resource(i->path, resource);
+            break;
+        default:
+            /* ? */
+            break;
+        }
+        i = i->next;
+    }
+    /* Update the resource map */
+    found = malloc(sizeof(struct resmap_node));
+    duped_name = (char *)malloc(strlen(resource)+1);
+    strcpy(duped_name, resource);
+    found->resname = duped_name;
+    found->resource = result;
+    found->refcount = 1;
+    tree_insert(&locked_resources, (TREE_NODE *)found, rescmp);
+    /* Build another copy for the reverse map */
+    found = malloc(sizeof(struct resmap_node));
+    duped_name = (char *)malloc(strlen(resource)+1);
+    strcpy(duped_name, resource);
+    found->resname = duped_name;
+    found->resource = result;
+    found->refcount = 0;
+    tree_insert(&reverse_map, (TREE_NODE *)found, ptrcmp);
+    
+    return result;
+}
+
+void
+mncl_release_raw(MNCL_RAW *raw)
+{
+    struct resmap_node seek, *found = NULL, *found2 = NULL;
+    if (!raw) {
+        return;
+    }
+    seek.resource = raw;
+    found = (struct resmap_node *)tree_find(&reverse_map, (TREE_NODE *)&seek, ptrcmp);
+    if (!found) {
+        return;
+    }
+    printf("Mapped to %s...", found->resname);
+    found2 = (struct resmap_node *)tree_find(&locked_resources, (TREE_NODE *)found, rescmp);
+    
+    if (found2) {
+        --found2->refcount;
+        if (!found2->refcount) {
+            printf("freeing.\n");
+            tree_delete(&reverse_map, (TREE_NODE *)found);
+            tree_delete(&locked_resources, (TREE_NODE *)found2);
+            if (found2->resource->data) {
+                free(found2->resource->data);
+                free(found2->resource);
+                free(found);
+                free(found2);
+            }
+        } else {
+            printf("new refcount %d\n", found2->refcount);
+        }
+    }
+}
+
+/* Exported accessor functions */
+
+int
+mncl_raw_size(MNCL_RAW *raw)
+{
+    return raw->size;
+}
+
+unsigned char
+mncl_raw_u8(MNCL_RAW *raw, int offset)
+{
+    return raw->data[offset];
+}
+
+unsigned short
+mncl_raw_u16le(MNCL_RAW *raw, int offset)
+{
+    return ((unsigned short)raw->data[offset+1] << 8) | raw->data[offset];
+}
+
+unsigned int 
+mncl_raw_u32le(MNCL_RAW *raw, int offset)
+{
+    return ((unsigned int)raw->data[offset+3] << 24) | 
+           ((unsigned int)raw->data[offset+2] << 16) | 
+           ((unsigned int)raw->data[offset+1] << 8)  |
+           raw->data[offset];
+}
+
+unsigned long
+mncl_raw_u64le(MNCL_RAW *raw, int offset)
+{
+    return ((unsigned long)raw->data[offset+7] << 56) | 
+           ((unsigned long)raw->data[offset+6] << 48) | 
+           ((unsigned long)raw->data[offset+5] << 40) | 
+           ((unsigned long)raw->data[offset+4] << 32) | 
+           ((unsigned long)raw->data[offset+3] << 24) | 
+           ((unsigned long)raw->data[offset+2] << 16) | 
+           ((unsigned long)raw->data[offset+1] << 8)  |
+           raw->data[offset];
+}
+
+unsigned short
+mncl_raw_u16be(MNCL_RAW *raw, int offset)
+{
+    return ((unsigned short)raw->data[offset] << 8) | raw->data[offset+1];
+}
+
+unsigned int 
+mncl_raw_u32be(MNCL_RAW *raw, int offset)
+{
+    return ((unsigned int)raw->data[offset] << 24) | 
+           ((unsigned int)raw->data[offset+1] << 16) | 
+           ((unsigned int)raw->data[offset+2] << 8)  |
+           raw->data[offset+3];
+}
+
+unsigned long
+mncl_raw_u64be(MNCL_RAW *raw, int offset)
+{
+    return ((unsigned long)raw->data[offset] << 56) | 
+           ((unsigned long)raw->data[offset+1] << 48) | 
+           ((unsigned long)raw->data[offset+2] << 40) | 
+           ((unsigned long)raw->data[offset+3] << 32) | 
+           ((unsigned long)raw->data[offset+4] << 24) | 
+           ((unsigned long)raw->data[offset+5] << 16) | 
+           ((unsigned long)raw->data[offset+6] << 8)  |
+           raw->data[offset+7];
+}
+
+char
+mncl_raw_s8(MNCL_RAW *raw, int offset)
+{
+    return (char)raw->data[offset];
+}
+
+short
+mncl_raw_s16le(MNCL_RAW *raw, int offset)
+{
+    return (short)mncl_raw_u16le(raw, offset);
+}
+
+short
+mncl_raw_s16be(MNCL_RAW *raw, int offset)
+{
+    return (short)mncl_raw_u16be(raw, offset);
+}
+
+int
+mncl_raw_s32le(MNCL_RAW *raw, int offset)
+{
+    return (int)mncl_raw_u32le(raw, offset);
+}
+
+int
+mncl_raw_s32be(MNCL_RAW *raw, int offset)
+{
+    return (int)mncl_raw_u32be(raw, offset);
+}
+
+long
+mncl_raw_s64le(MNCL_RAW *raw, int offset)
+{
+    return (long)mncl_raw_u64le(raw, offset);
+}
+
+long
+mncl_raw_s64be(MNCL_RAW *raw, int offset)
+{
+    return (long)mncl_raw_u64be(raw, offset);
+}
+
+float
+mncl_raw_f32le(MNCL_RAW *raw, int offset)
+{
+    union { unsigned int i; float f; } punner;
+    punner.i = mncl_raw_u32le(raw, offset);
+    return punner.f;
+}
+
+float
+mncl_raw_f32be(MNCL_RAW *raw, int offset)
+{
+    union { unsigned int i; float f; } punner;
+    punner.i = mncl_raw_u32be(raw, offset);
+    return punner.f;
+}
+
+double
+mncl_raw_f64le(MNCL_RAW *raw, int offset)
+{
+    union { unsigned long i; double f; } punner;
+    punner.i = mncl_raw_u64le(raw, offset);
+    return punner.f;
+}
+
+double
+mncl_raw_f64be(MNCL_RAW *raw, int offset)
+{
+    union { unsigned long i; double f; } punner;
+    punner.i = mncl_raw_u64be(raw, offset);
+    return punner.f;
+}
+

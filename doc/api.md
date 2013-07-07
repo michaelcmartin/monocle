@@ -43,7 +43,7 @@ int mncl_add_resource_zipfile(const char *pathname);
 
 These add directories or zip files to the front of the component's search path. They use the name "resource" here because the client will generally be using these functions alongside the Resource Component in layer 2. The argument names the directory or zip file to use.
 
-Both functions return zero on success, or an error code on failure.
+Both functions return true on success, or false on failure.
 
 Because they add to the *front* of the search path, resource locations added later override stuff added earlier. So, the protocol is to add core data first, and then add-ons.
 
