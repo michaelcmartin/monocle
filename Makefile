@@ -2,11 +2,7 @@ CFLAGS = $(shell sdl-config --cflags) -Iinclude -O2 -Wall
 CCFLAGS = $(CFLAGS)
 DEMOLDFLAGS = -Wl,-rpath,. -Lbin -lmonocle $(shell sdl-config --libs)
 
-CPPOBJS = $(patsubst %.cpp,%.o,$(wildcard src/*.cpp))
-CCOBJS = $(patsubst %.cc,%.o,$(wildcard src/*.cc))
-COBJS = $(patsubst %.c,%.o,$(wildcard src/*.c))
-OBJS = $(CPPOBJS) $(CCOBJS) $(COBJS)
-
+OBJS = $(patsubst %.c,%.o,$(wildcard src/*.c))
 
 all: dirs | lib/libmonocle.a bin/libmonocle.so bin/earthball bin/rawtest
 
@@ -14,7 +10,7 @@ lib/libmonocle.a: lib $(OBJS)
 	ar cr lib/libmonocle.a $(OBJS)
 
 bin/libmonocle.so: bin $(OBJS)
-	g++ -o bin/libmonocle.so -shared $(CCFLAGS) -fvisibility=hidden -fvisibility-inlines-hidden $(OBJS) $(shell sdl-config --libs) -lSDL_mixer -lSDL_image -lz
+	gcc -o bin/libmonocle.so -shared $(CCFLAGS) -fvisibility=hidden -fvisibility-inlines-hidden $(OBJS) $(shell sdl-config --libs) -lSDL_mixer -lSDL_image -lz
 
 bin/earthball: bin/libmonocle.so demo/earthball.c bin/earthball-res.zip
 	gcc -o bin/earthball $(CFLAGS) demo/earthball.c $(DEMOLDFLAGS)
@@ -37,13 +33,7 @@ tidy:
 depend:
 	makedepend -Y. -Iinclude src/*.c src/*.cc src/*.cpp 2> /dev/null
 
-$(CPPOBJS): %.o: %.cpp
-	g++ -o $@ -c $(CCFLAGS) -fvisibility=hidden -fvisibility-inlines-hidden -DMONOCLE_EXPORTS -fPIC $<
-
-$(CCOBJS): %.o: %.cc
-	g++ -o $@ -c $(CCFLAGS) -fvisibility=hidden -fvisibility-inlines-hidden -DMONOCLE_EXPORTS -fPIC $<
-
-$(COBJS): %.o: %.c
+$(OBJS): %.o: %.c
 	gcc -o $@ -c $(CFLAGS) -fvisibility=hidden -DMONOCLE_EXPORTS -fPIC $<
 # DO NOT DELETE
 
