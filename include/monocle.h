@@ -107,6 +107,55 @@ extern MONOCULAR void mncl_free_sfx(MNCL_SFX *sfx);
 
 extern MONOCULAR void mncl_play_sfx(MNCL_SFX *sfx, int volume);
 
+/* Event component */
+
+typedef enum {
+    MNCL_EVENT_QUIT,
+    MNCL_EVENT_PREUPDATE,
+    MNCL_EVENT_KEYDOWN,
+    MNCL_EVENT_KEYUP,
+    MNCL_EVENT_MOUSEMOVE,
+    MNCL_EVENT_MOUSEBUTTONDOWN,
+    MNCL_EVENT_MOUSEBUTTONUP,
+    MNCL_EVENT_JOYAXISMOVE,
+    MNCL_EVENT_JOYBUTTONDOWN,
+    MNCL_EVENT_JOYBUTTONUP,
+    MNCL_EVENT_JOYHATMOVE,
+    MNCL_EVENT_UPDATE,
+    MNCL_EVENT_COLLISION,
+    MNCL_EVENT_POSTUPDATE,
+    MNCL_EVENT_PRERENDER,
+    MNCL_EVENT_RENDER,
+    MNCL_EVENT_POSTRENDER,
+    MNCL_EVENT_FRAMEBOUNDARY,
+    /* ... */
+    MNCL_NUM_EVENTS
+} MNCL_EVENT_TYPE;
+
+typedef struct mncl_event_struct {
+    MNCL_EVENT_TYPE type;
+    int subscriber;
+    union {
+        int key;
+        struct { int x, y; } mousemove;
+        int mousebutton;
+        struct { int stick, index, value; } joystick;
+        /* ... */
+    } value;
+} MNCL_EVENT;
+
+extern MONOCULAR MNCL_EVENT *mncl_pop_global_event(void);
+
+extern MONOCULAR MNCL_EVENT_TYPE mncl_event_type(MNCL_EVENT *evt);
+extern MONOCULAR int mncl_event_subscriber(MNCL_EVENT *evt);
+extern MONOCULAR int mncl_event_key(MNCL_EVENT *evt);
+extern MONOCULAR int mncl_event_mouse_x(MNCL_EVENT *evt);
+extern MONOCULAR int mncl_event_mouse_y(MNCL_EVENT *evt);
+extern MONOCULAR int mncl_event_mouse_button(MNCL_EVENT *evt);
+extern MONOCULAR int mncl_event_joy_stick(MNCL_EVENT *evt);
+extern MONOCULAR int mncl_event_joy_index(MNCL_EVENT *evt);
+extern MONOCULAR int mncl_event_joy_value(MNCL_EVENT *evt);
+
 #ifdef __cplusplus
 }
 #endif
