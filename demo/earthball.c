@@ -6,6 +6,9 @@ struct globe {
     int x, y, dx, dy, frame;
 };
 
+struct globe globes[16];
+MNCL_SPRITESHEET *earth;
+
 void
 instructions(void)
 {
@@ -20,14 +23,44 @@ instructions(void)
     printf("    Close the window to quit immediately\n");
 }
 
+void
+update(void)
+{
+    int i;
+    for (i = 0; i < 16; ++i) {
+        globes[i].x += globes[i].dx;
+        globes[i].y += globes[i].dy;
+        if (globes[i].x < 0) {
+            globes[i].x = 0; globes[i].dx = -globes[i].dx;
+        }
+        if (globes[i].y < 0) {
+            globes[i].y = 0; globes[i].dy = -globes[i].dy;
+        }
+        if (globes[i].x > 704) {
+            globes[i].x = 704; globes[i].dx = -globes[i].dx;
+        }
+        if (globes[i].y > 416) {
+            globes[i].y = 416; globes[i].dy = -globes[i].dy;
+        }
+        globes[i].frame = (globes[i].frame + 1) % 30;
+    }
+}
+
+void
+render(void)
+{
+    int i;
+    mncl_draw_rect(256, 112, 256, 256, 128, 128, 128);
+    for (i = 0; i < 16; ++i) {
+        mncl_draw_from_spritesheet(earth, globes[i].x, globes[i].y, (globes[i].frame % 8) * 64, (globes[i].frame / 8) * 64, 64, 64);
+    }
+}
+
 int
 main(int argc, char **argv)
 {
-    MNCL_SPRITESHEET *earth;
     MNCL_SFX *sfx;
     int done, i, countdown, music_on, bg, music_volume;
-    Uint32 targetTime;
-    struct globe globes[16];
 
     for (i = 0; i < 16; ++i) {
         globes[i].x = rand() % (768 - 64);
@@ -54,105 +87,73 @@ main(int argc, char **argv)
     instructions();
     mncl_hide_mouse_in_fullscreen(1);
 
-    targetTime = SDL_GetTicks() + 40; // Target FPS is 25
-
     while (!done) {
-        SDL_Event e;
-
-        mncl_begin_frame();
-        mncl_draw_rect(256, 112, 256, 256, 128, 128, 128);
-        for (i = 0; i < 16; ++i) {
-            mncl_draw_from_spritesheet(earth, globes[i].x, globes[i].y, (globes[i].frame % 8) * 64, (globes[i].frame / 8) * 64, 64, 64);
-        }
-        mncl_end_frame();
-
-        for (i = 0; i < 16; ++i) {
-            globes[i].x += globes[i].dx;
-            globes[i].y += globes[i].dy;
-            if (globes[i].x < 0) {
-                globes[i].x = 0; globes[i].dx = -globes[i].dx;
-            }
-            if (globes[i].y < 0) {
-                globes[i].y = 0; globes[i].dy = -globes[i].dy;
-            }
-            if (globes[i].x > 704) {
-                globes[i].x = 704; globes[i].dx = -globes[i].dx;
-            }
-            if (globes[i].y > 416) {
-                globes[i].y = 416; globes[i].dy = -globes[i].dy;
-            }
-            globes[i].frame = (globes[i].frame + 1) % 30;
-        }         
-
-        while (SDL_PollEvent(&e)) {
-            switch(e.type) {
-            case SDL_QUIT:
-                done = 1;
+        MNCL_EVENT *e = mncl_pop_global_event();
+        switch(e->type) {
+        case MNCL_EVENT_QUIT:
+            done = 1;
+            break;
+        case MNCL_EVENT_KEYDOWN:
+            switch (e->value.key) {
+            case SDLK_ESCAPE:
+                mncl_fade_out_music(1000);
+                countdown = 100;
                 break;
-            case SDL_KEYDOWN:
-                switch (e.key.keysym.sym) {
-                case SDLK_ESCAPE:
-                    mncl_fade_out_music(1000);
-                    countdown = 100;
-                    break;
-                case SDLK_b:
-                    bg = (bg + 1) % 4;
-                    mncl_set_clear_color(bg == 1 ? 128 : 0, bg == 2 ? 128 : 0, bg == 3 ? 128 : 0);
-                    break;
-                case SDLK_p:
-                    music_on = 1 - music_on;
-                    if (music_on) {
-                        mncl_resume_music();
-                    } else {
-                        mncl_pause_music();
-                    }
-                    break;
-                case SDLK_t:
-                    printf("Toggled fullscreen to: %s\n", mncl_toggle_fullscreen() ? "on" : "off");
-                    printf("Fullscreen reported as: %s\n", mncl_is_fullscreen() ? "on" : "off");
-                    break;
-                case SDLK_UP:
-                    music_volume += 16;
-                    if (music_volume > 128) {
-                        music_volume = 128;
-                    }
-                    mncl_music_volume(music_volume);
-                    printf("Music volume now: %d\n", music_volume);
-                    break;
-                case SDLK_DOWN:
-                    music_volume -= 16;
-                    if (music_volume < 0) {
-                        music_volume = 0;
-                    }
-                    mncl_music_volume(music_volume);
-                    printf("Music volume now: %d\n", music_volume);
-                    break;
-                case SDLK_SPACE:
-                    mncl_play_sfx(sfx, 128);
-                    break;
-                case SDLK_LSHIFT:
-                    mncl_play_sfx(sfx, 64);
-                    break;
-                default:
-                    break;
+            case SDLK_b:
+                bg = (bg + 1) % 4;
+                mncl_set_clear_color(bg == 1 ? 128 : 0, bg == 2 ? 128 : 0, bg == 3 ? 128 : 0);
+                break;
+            case SDLK_p:
+                music_on = 1 - music_on;
+                if (music_on) {
+                    mncl_resume_music();
+                } else {
+                    mncl_pause_music();
                 }
+                break;
+            case SDLK_t:
+                printf("Toggled fullscreen to: %s\n", mncl_toggle_fullscreen() ? "on" : "off");
+                printf("Fullscreen reported as: %s\n", mncl_is_fullscreen() ? "on" : "off");
+                break;
+            case SDLK_UP:
+                music_volume += 16;
+                if (music_volume > 128) {
+                    music_volume = 128;
+                }
+                mncl_music_volume(music_volume);
+                printf("Music volume now: %d\n", music_volume);
+                break;
+            case SDLK_DOWN:
+                music_volume -= 16;
+                if (music_volume < 0) {
+                    music_volume = 0;
+                }
+                mncl_music_volume(music_volume);
+                printf("Music volume now: %d\n", music_volume);
+                break;
+            case SDLK_SPACE:
+                mncl_play_sfx(sfx, 128);
+                break;
+            case SDLK_LSHIFT:
+                mncl_play_sfx(sfx, 64);
                 break;
             default:
                 break;
             }
-        }
-        Uint32 currentTime = SDL_GetTicks();
-        if (currentTime < targetTime) {
-            Uint32 waitTime = targetTime - currentTime;
-            if (waitTime > 0 && waitTime < 1000) {
-                SDL_Delay(waitTime);
+            break;
+        case MNCL_EVENT_UPDATE:
+            update();
+            if (countdown > 0) {
+                if (--countdown == 0) {
+                    done = 1;
+                }
             }
-        }
-        targetTime = SDL_GetTicks() + 40;
-        if (countdown > 0) {
-            if (--countdown == 0) {
-                done = 1;
-            }
+            break;
+        case MNCL_EVENT_RENDER:
+            render();
+            break;
+        default:
+            break;
         }
     }
 
