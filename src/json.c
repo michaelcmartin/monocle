@@ -108,7 +108,7 @@ space (JSON_PARSE_CTX *ctx)
         }
         readch(ctx);
     }
-}    
+}
 
 static JSON_VALUE *
 word(JSON_PARSE_CTX *ctx, int scan)
@@ -238,6 +238,182 @@ number(JSON_PARSE_CTX *ctx, int scan)
     return result;
 }
 
+static int
+hex_decode(JSON_PARSE_CTX *ctx)
+{
+    int i, result = 0;
+    for (i = 0; i < 4; ++i) {
+        int c = readch(ctx);
+        int hexit = 0;
+        if (c >= '0' && c <= '9') {
+            hexit = c - '0';
+        } else if (c >= 'A' && c <= 'F') {
+            hexit = c - 'A' + 10;
+        } else if (c >= 'a' && c <= 'f') {
+            hexit = c - 'a' + 10;
+        } else {
+            snprintf(error_str, 512, "%d:%d: Expected hex digit", ctx->line, ctx->col);
+            return -1;
+        }
+        result = result * 16 + hexit;
+    }
+    return result;
+}
+
+static int
+json_str_size(JSON_PARSE_CTX *ctx_orig, int scan)
+{
+    /* We don't want to alter the context here, so we make a copy */
+    JSON_PARSE_CTX ctx = *ctx_orig;
+    int c = readch(&ctx);
+    int result = 0;
+
+    if (c != '\"') {
+        snprintf(error_str, 512, "%d:%d: Expected string", ctx.line, ctx.col);
+        return -1;
+    }
+    while(1) {
+        c = readch(&ctx);
+        if (c < 32) {
+            snprintf(error_str, 512, "%d:%d: Unterminated string constant", ctx_orig->line, ctx_orig->col);
+            return -1;
+        }
+        if (c == '\"') {
+            if (scan) {
+                *ctx_orig = ctx;
+            }
+            return result;
+        } else if (c == '\\') {
+            c = readch(&ctx);
+            if (c < 32) {
+                snprintf(error_str, 512, "%d:%d: Unterminated string constant", ctx_orig->line, ctx_orig->col);
+                return -1;
+            } else {
+                int ch;
+                switch(c) {
+                case 'u':
+                    ch = hex_decode(&ctx);
+                    if (ch < 0) {
+                        return -1;
+                    } else if (ch == 0) {
+                        snprintf(error_str, 512, "%d:%d: NULL character in string", ctx.line, ctx.col);
+                        return -1;
+                    } else if (ch < 0x80) {
+                        result += 1;
+                    } else if (ch < 0x800) {
+                        result += 2;
+                    } else {
+                        result += 3;
+                    }
+                    break;
+                case '\"':
+                case '\\':
+                case '/':
+                case 'b':
+                case 'f':
+                case 'n':
+                case 'r':
+                case 't':
+                    result += 1;
+                    break;
+                default:
+                    snprintf(error_str, 512, "%d:%d: Illegal string escape '%c'", ctx.line, ctx.col, c);
+                    return -1;
+                }
+            }
+        } else {
+            result += 1;
+        }
+    }
+    return result;
+}
+
+/* The buffer dst must have been pre-sized by a call to
+ * json_str_size. This function returns 0 on failure, >= 0 on
+ * success. */
+static int
+json_strcpy(char *dst, JSON_PARSE_CTX *ctx) {
+    int c = readch(ctx); /* Skip the leading quote */
+    while(1) {
+        c = readch(ctx);
+        if (c == '\"') {
+            return 1;
+        } else if (c == '\\') {
+            int ch;
+            c = readch(ctx);
+            switch(c) {
+            case 'u':
+                ch = hex_decode(ctx);
+                if (ch < 0) {
+                    return 0;
+                } else if (ch < 0x80) {
+                    *dst++ = ch;
+                } else if (ch < 0x800) {
+                    *dst++ = (((ch >> 6) & 0xff) | 0xC0);
+                    *dst++ = (ch & 0x3f) | 0x80;
+                } else {
+                    *dst++ = (((ch >> 12) & 0xff) | 0xe0);
+                    *dst++ = ((ch >> 6) & 0x3f) | 0x80;
+                    *dst++ = (ch & 0x3f) | 0x80;
+                }
+                break;
+            case '\"':
+            case '\\':
+            case '/':
+                *dst++ = c;
+                break;
+            case 'b':
+                *dst++ = '\b';
+                break;
+            case 'f':
+                *dst++ = '\f';
+                break;
+            case 'n':
+                *dst++ = '\n';
+                break;
+            case 'r':
+                *dst++ = '\r';
+                break;
+            case 't':
+                *dst++ = '\t';
+                break;
+            default:
+                snprintf(error_str, 512, "%d:%d: Illegal string escape '%c'", ctx->line, ctx->col, c);
+                return 0;
+            }
+        } else {
+            *dst++ = c;
+        }
+    }
+    return 1;
+}
+
+static JSON_VALUE *
+string(JSON_PARSE_CTX *ctx, int scan)
+{
+    JSON_STRING_VALUE *result;
+    int sz = json_str_size(ctx, scan);
+    if (sz < 0) {
+        return NULL;
+    }
+    if (scan) {
+        return json_ok;
+    }
+    result = malloc(sizeof(JSON_STRING_VALUE) + sz + 1);
+    if (!result) {
+        snprintf(error_str, 512, "%d:%d: Out of memory", ctx->line, ctx->col);
+        return NULL;
+    }
+    result->str[sz] = '\0';
+    if (json_strcpy(result->str, ctx)) {
+        result->core.tag = JSON_STRING;
+        result->core.value.string = result->str;
+        return (JSON_VALUE *)result;
+    }
+    free (result);
+    return NULL;
+}
+
 /* Array and Object need this forward decl */
 static JSON_VALUE *value(JSON_PARSE_CTX *ctx, int scan);
 
@@ -255,6 +431,9 @@ value(JSON_PARSE_CTX *ctx, int scan)
         break;
     case '-':
         result = number(ctx, scan);
+        break;
+    case '\"':
+        result = string(ctx, scan);
         break;
     default:
         if (isdigit(ch)) {
@@ -296,17 +475,48 @@ json_dump(JSON_VALUE *v)
     case JSON_NUMBER:
         printf("(NUMBER: %.2lf)", v->value.number);
         break;
+    case JSON_STRING:
+        printf("(STRING: \"%s\")", v->value.string);
+        break;
     default:
         printf("(UNKNOWN)");
         break;
     }
 }
 
+static void
+test_size(const char *s, int expected) {
+    int actual;
+    JSON_PARSE_CTX ctx;
+    ctx.s = s;
+    ctx.size = strlen(s);
+    ctx.i = 0;
+    ctx.line = ctx.col = 0;
+    error_str[0] = error_str[511] = '\0';
+    actual = json_str_size(&ctx, 0);
+    if (ctx.i || ctx.line || ctx.col) {
+        printf("%s: FAILURE: json_str_size advanced our context\n", s);
+    }
+    if (actual < 0) {
+        printf("%s: %s: Error message \"%s\"\n", s, (expected < 0) ? "SUCCESS" : "FAILURE", error_str);
+    } else if (actual != expected) {
+        printf("%s: FAILURE: Expected %d, got %d\n", s, expected, actual);
+    } else {
+        printf("%s: SUCCESS\n", s);
+    }
+}
+
 int main (int argc, char **argv) {
-    const char *s = "42.3e10";
+    const char *s = "\"\\u4e16\\u754c\\u597d\\n\\u03b1\\u03b2\\u03b3\\nabc\"";
     JSON_VALUE *v = json_parse(s, strlen(s));
     json_dump(v); printf("\n");
     json_free(v);
+    test_size("abc", -1);
+    test_size("\"abc", -1);
+    test_size("\"abc\"", 3);
+    test_size("\"\"", 0);
+    test_size("\"\\abc\"", -1);
+    test_size("\"a\\bc\"", 3);
+    test_size("\"\\u4f60\\u597d\"", 6);
     return 0;
 }
-    
