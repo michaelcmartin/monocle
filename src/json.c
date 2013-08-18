@@ -418,6 +418,84 @@ string(JSON_PARSE_CTX *ctx, int scan)
 static JSON_VALUE *value(JSON_PARSE_CTX *ctx, int scan);
 
 static JSON_VALUE *
+array(JSON_PARSE_CTX *ctx, int scan)
+{
+    JSON_ARRAY_VALUE *result = NULL;
+    int count = 0;
+    JSON_PARSE_CTX start = *ctx;
+    int ch = readch(ctx);
+    if (ch != '[') {
+        snprintf(error_str, 512, "%d:%d: Expected '['", ctx->line, ctx->col);
+        return NULL;
+    }
+    space(ctx);
+    while (1) {
+        ch = peekch(ctx);
+        /* If we aren't just starting, we've just read a 'value',
+         * which strips trailing whitespace. The next character should
+         * be a ] or a , or the beginning of the first value. */
+        if (ch == ']') {
+            break;
+        } else if (ch == '\0') {
+            snprintf(error_str, 512, "%d:%d: Unterminated array", start.line, start.col);
+            return NULL;
+        }
+        if (count) {
+            if (ch != ',') {
+                snprintf(error_str, 512, "%d:%d: Expected ','", ctx->line, ctx->col);
+                return NULL;
+            }
+            readch(ctx);
+        }
+        if (!value(ctx, 1)) {
+            return NULL;
+        }
+        ++count;
+    }
+    if (scan) {
+        readch(ctx); /* Consume the close bracket */
+        return json_ok;
+    }
+    result = malloc(sizeof(JSON_ARRAY_VALUE) + (sizeof (JSON_VALUE *) * count));
+    if (!result) {
+        snprintf(error_str, 512, "%d:%d: Out of memory", ctx->line, ctx->col);
+        return NULL;
+    }
+    /* This is kind of copy-pastey. We might better served with a
+     * split like when parsing strings. */
+    *ctx = start;
+    readch(ctx); /* Consume the '[' */
+    result->core.tag = JSON_ARRAY;
+    result->core.value.array.size = count;
+    result->core.value.array.data = result->array;
+    space(ctx);
+    count = 0;
+    while (1) {
+        ch = peekch(ctx);
+        /* If we aren't just starting, we've just read a 'value',
+         * which strips trailing whitespace. The next character should
+         * be a ] or a , or the beginning of the first value. */
+        if (ch == ']') {
+            readch(ctx);
+            break;
+        } else if (ch == '\0') {
+            snprintf(error_str, 512, "%d:%d: Unterminated array", start.line, start.col);
+            return NULL;
+        }
+        if (count) {
+            if (ch != ',') {
+                snprintf(error_str, 512, "%d:%d: Expected ','", ctx->line, ctx->col);
+                return NULL;
+            }
+            readch(ctx);
+        }
+        result->array[count] = value(ctx, 0);
+        ++count;
+    }
+    return (JSON_VALUE *)result;
+}
+
+static JSON_VALUE *
 value(JSON_PARSE_CTX *ctx, int scan)
 {
     int ch;
@@ -428,6 +506,7 @@ value(JSON_PARSE_CTX *ctx, int scan)
     case '{':
         break;
     case '[':
+        result = array(ctx, scan);
         break;
     case '-':
         result = number(ctx, scan);
@@ -478,6 +557,17 @@ json_dump(JSON_VALUE *v)
     case JSON_STRING:
         printf("(STRING: \"%s\")", v->value.string);
         break;
+    case JSON_ARRAY:
+    {
+        int i;
+        printf("(ARRAY: Size %d", v->value.array.size);
+        for (i = 0; i < v->value.array.size; ++i) {
+            printf("\n\t");
+            json_dump(v->value.array.data[i]);
+        }
+        printf(")");
+    }
+    break;
     default:
         printf("(UNKNOWN)");
         break;
@@ -507,7 +597,7 @@ test_size(const char *s, int expected) {
 }
 
 int main (int argc, char **argv) {
-    const char *s = "\"\\u4e16\\u754c\\u597d\\n\\u03b1\\u03b2\\u03b3\\nabc\"";
+    const char *s = "[\"\\u4e16\\u754c\\u597d\", \"\\u03b1\\u03b2\\u03b3\", \"abc\"]";
     JSON_VALUE *v = json_parse(s, strlen(s));
     json_dump(v); printf("\n");
     json_free(v);
