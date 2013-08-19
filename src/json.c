@@ -41,6 +41,12 @@ json_error()
     return error_str;
 }
 
+static int
+json_object_node_cmp(TREE_NODE *a, TREE_NODE *b)
+{
+    return strcmp(((JSON_OBJECT_NODE *)a)->key, ((JSON_OBJECT_NODE *)b)->key);
+}
+
 static void
 free_object_node(TREE_NODE *node) {
     JSON_OBJECT_NODE *n = (JSON_OBJECT_NODE *)node;
@@ -339,6 +345,7 @@ json_strcpy(char *dst, JSON_PARSE_CTX *ctx) {
     while(1) {
         c = readch(ctx);
         if (c == '\"') {
+            *dst++ = '\0';
             return 1;
         } else if (c == '\\') {
             int ch;
@@ -508,6 +515,88 @@ array(JSON_PARSE_CTX *ctx, int scan)
 }
 
 static JSON_VALUE *
+object(JSON_PARSE_CTX *ctx, int scan)
+{
+    JSON_VALUE *result = json_ok;
+    int ch = readch(ctx);
+    if (ch != '{') {
+        snprintf(error_str, 512, "%d:%d: Out of memory", ctx->line, ctx->col);
+        return NULL;
+    }
+    if (!scan) {
+        result = (JSON_VALUE *)malloc(sizeof(JSON_VALUE));
+        if (!result) {
+            snprintf(error_str, 512, "%d:%d: Out of memory", ctx->line, ctx->col);
+            return NULL;
+        }
+        result->tag = JSON_OBJECT;
+        result->value.object.root = NULL;
+    }
+
+    while (1) {
+        int keysize;
+        JSON_OBJECT_NODE *curnode;
+        JSON_VALUE *val;
+
+        space(ctx);
+        ch = peekch(ctx);
+        if (ch == '}') {
+            readch(ctx);
+            break;
+        }
+        /* If the tree is empty, then this is the first iteration and we don't need commas. */
+        if (result->value.object.root) {
+            if (ch != ',') {
+                if (!scan) {
+                    json_free(result);
+                }
+                snprintf(error_str, 512, "%d:%d: Expected ':'", ctx->line, ctx->col);
+                return NULL;
+            }
+            readch(ctx);
+            space(ctx);
+        }
+        keysize = json_str_size(ctx, scan);
+        if (keysize < 0) {
+            if (!scan) {
+                json_free(result);
+            }
+            return NULL;
+        }
+        if (!scan) {
+            curnode = malloc(sizeof(JSON_OBJECT_NODE) + keysize + 1);
+            if (!curnode) {
+                json_free(result);
+                snprintf(error_str, 512, "%d:%d: Out of memory", ctx->line, ctx->col);
+                return NULL;
+            }
+            json_strcpy(curnode->key, ctx);
+        }
+        space(ctx);
+        ch = readch(ctx);
+        if (ch != ':') {
+            if (!scan) {
+                json_free(result);
+            }
+            snprintf(error_str, 512, "%d:%d: Expected ':'", ctx->line, ctx->col);
+            return NULL;
+        }
+        val = value(ctx, scan);
+        if (!val) {
+            if (!scan) {
+                json_free(result);
+            }
+            return NULL;
+        }
+        if (!scan) {
+            curnode->value = val;
+            tree_insert(&result->value.object, (TREE_NODE *)curnode, json_object_node_cmp);
+        }
+    }
+    return result;
+}
+
+static JSON_VALUE *
 value(JSON_PARSE_CTX *ctx, int scan)
 {
     int ch;
@@ -516,6 +605,7 @@ value(JSON_PARSE_CTX *ctx, int scan)
     ch = peekch(ctx);
     switch (ch) {
     case '{':
+        result = object(ctx, scan);
         break;
     case '[':
         result = array(ctx, scan);
@@ -549,11 +639,21 @@ json_parse(const char *data, size_t size)
     return value(&ctx, 0);
 }
 
+void json_dump(JSON_VALUE *);
+
+static void
+dump_object_node(TREE_NODE *node) {
+    JSON_OBJECT_NODE *n = (JSON_OBJECT_NODE *)node;
+    printf("\n\t\"%s\": ", n->key);
+    json_dump(n->value);
+}
+
+
 void
 json_dump(JSON_VALUE *v)
 {
     if (!v) {
-        printf("<null ptr>");
+        printf("<null ptr> (Error: %s)\n", json_error());
         return;
     }
     switch (v->tag) {
@@ -580,6 +680,11 @@ json_dump(JSON_VALUE *v)
         printf(")");
     }
     break;
+    case JSON_OBJECT:
+        printf("(OBJECT:");
+        tree_inorder(&v->value.object, dump_object_node);
+        printf(")");
+        break;
     default:
         printf("(UNKNOWN)");
         break;
@@ -609,7 +714,7 @@ test_size(const char *s, int expected) {
 }
 
 int main (int argc, char **argv) {
-    const char *s = "[\"\\u4e16\\u754c\\u597d\", \"\\u03b1\\u03b2\\u03b3\", \"abc\"]";
+    const char *s = "  {\"\\u4e16\\u754c\\u597d\": 1.2, \"\\u03b1\\u03b2\\u03b3\": true, \"abc\": false}";
     JSON_VALUE *v = json_parse(s, strlen(s));
     json_dump(v); printf("\n");
     json_free(v);
