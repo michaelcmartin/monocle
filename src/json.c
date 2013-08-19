@@ -58,7 +58,9 @@ json_free (JSON_VALUE *json)
     switch (json->tag) {
     case JSON_ARRAY:
         for (i = 0; i < json->value.array.size; ++i) {
-            json_free(json->value.array.data[i]);
+            if (json->value.array.data[i]) {
+                json_free(json->value.array.data[i]);
+            }
         }
         break;
     case JSON_OBJECT:
@@ -421,7 +423,7 @@ static JSON_VALUE *
 array(JSON_PARSE_CTX *ctx, int scan)
 {
     JSON_ARRAY_VALUE *result = NULL;
-    int count = 0;
+    int i, count = 0;
     JSON_PARSE_CTX start = *ctx;
     int ch = readch(ctx);
     if (ch != '[') {
@@ -435,6 +437,7 @@ array(JSON_PARSE_CTX *ctx, int scan)
          * which strips trailing whitespace. The next character should
          * be a ] or a , or the beginning of the first value. */
         if (ch == ']') {
+            readch(ctx);
             break;
         } else if (ch == '\0') {
             snprintf(error_str, 512, "%d:%d: Unterminated array", start.line, start.col);
@@ -453,7 +456,6 @@ array(JSON_PARSE_CTX *ctx, int scan)
         ++count;
     }
     if (scan) {
-        readch(ctx); /* Consume the close bracket */
         return json_ok;
     }
     result = malloc(sizeof(JSON_ARRAY_VALUE) + (sizeof (JSON_VALUE *) * count));
@@ -468,8 +470,11 @@ array(JSON_PARSE_CTX *ctx, int scan)
     result->core.tag = JSON_ARRAY;
     result->core.value.array.size = count;
     result->core.value.array.data = result->array;
+    for (i = 0; i < count; ++i) {
+        result->array[i] = NULL;
+    }
     space(ctx);
-    count = 0;
+    i = 0;
     while (1) {
         ch = peekch(ctx);
         /* If we aren't just starting, we've just read a 'value',
@@ -482,15 +487,22 @@ array(JSON_PARSE_CTX *ctx, int scan)
             snprintf(error_str, 512, "%d:%d: Unterminated array", start.line, start.col);
             return NULL;
         }
-        if (count) {
+        if (i) {
             if (ch != ',') {
                 snprintf(error_str, 512, "%d:%d: Expected ','", ctx->line, ctx->col);
                 return NULL;
             }
             readch(ctx);
         }
-        result->array[count] = value(ctx, 0);
-        ++count;
+        result->array[i] = value(ctx, 0);
+        if (!result->array[i]) {
+            /* This should really only happen if we run out of memory
+             * partway through; any malformed JSON objects should be
+             * caught by the sizing scan above. */
+            json_free((JSON_VALUE *)result);
+            return NULL;
+        }
+        ++i;
     }
     return (JSON_VALUE *)result;
 }
