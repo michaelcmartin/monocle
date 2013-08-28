@@ -183,7 +183,6 @@ number(JSON_PARSE_CTX *ctx, int scan)
     const char *s = ctx->s + ctx->i;
     int ch;
     JSON_VALUE *result;
-    printf("%s %d\n", ctx->s, ctx->i);
     if (peekch(ctx) == '-') {
         readch(ctx);
     }
@@ -282,8 +281,12 @@ json_str_size(JSON_PARSE_CTX *ctx_orig, int scan)
     }
     while(1) {
         c = readch(&ctx);
-        if (c < 32) {
+        if (c == 10) {
             snprintf(error_str, 512, "%d:%d: Unterminated string constant", ctx_orig->line, ctx_orig->col);
+            return -1;
+        }
+        if (c < 32) {
+            snprintf(error_str, 512, "%d:%d: Illegal string character", ctx.line, ctx.col);
             return -1;
         }
         if (c == '\"') {
@@ -518,7 +521,7 @@ static JSON_VALUE *
 object(JSON_PARSE_CTX *ctx, int scan)
 {
     JSON_VALUE *result = json_ok;
-    int ch = readch(ctx);
+    int first = 1, ch = readch(ctx);
     if (ch != '{') {
         snprintf(error_str, 512, "%d:%d: Out of memory", ctx->line, ctx->col);
         return NULL;
@@ -535,7 +538,7 @@ object(JSON_PARSE_CTX *ctx, int scan)
 
     while (1) {
         int keysize;
-        JSON_OBJECT_NODE *curnode;
+        JSON_OBJECT_NODE *curnode = NULL;
         JSON_VALUE *val;
 
         space(ctx);
@@ -544,8 +547,9 @@ object(JSON_PARSE_CTX *ctx, int scan)
             readch(ctx);
             break;
         }
-        /* If the tree is empty, then this is the first iteration and we don't need commas. */
-        if (result->value.object.root) {
+        if (first) {
+            first = 0;
+        } else {
             if (ch != ',') {
                 if (!scan) {
                     json_free(result);
@@ -631,99 +635,19 @@ JSON_VALUE *
 json_parse(const char *data, size_t size)
 {
     JSON_PARSE_CTX ctx;
+    JSON_VALUE *result;
     ctx.s = data;
     ctx.size = size;
     ctx.i = 0;
     ctx.line = ctx.col = 0;
     error_str[0] = error_str[511] = '\0';
-    return value(&ctx, 0);
-}
-
-void json_dump(JSON_VALUE *);
-
-static void
-dump_object_node(TREE_NODE *node) {
-    JSON_OBJECT_NODE *n = (JSON_OBJECT_NODE *)node;
-    printf("\n\t\"%s\": ", n->key);
-    json_dump(n->value);
-}
-
-
-void
-json_dump(JSON_VALUE *v)
-{
-    if (!v) {
-        printf("<null ptr> (Error: %s)\n", json_error());
-        return;
+    result = value(&ctx, 0);
+    if (result && peekch(&ctx)) {
+        /* This seems mean-spirited */
+        json_free(result);
+        snprintf(error_str, 512, "%d:%d: Extra garbage after value", ctx.line, ctx.col);
+        return NULL;
     }
-    switch (v->tag) {
-    case JSON_NULL:
-        printf("(NULL)");
-        break;
-    case JSON_BOOLEAN:
-        printf("(BOOLEAN: %s)", v->value.boolean ? "true" : "false");
-        break;
-    case JSON_NUMBER:
-        printf("(NUMBER: %.2lf)", v->value.number);
-        break;
-    case JSON_STRING:
-        printf("(STRING: \"%s\")", v->value.string);
-        break;
-    case JSON_ARRAY:
-    {
-        int i;
-        printf("(ARRAY: Size %d", v->value.array.size);
-        for (i = 0; i < v->value.array.size; ++i) {
-            printf("\n\t");
-            json_dump(v->value.array.data[i]);
-        }
-        printf(")");
-    }
-    break;
-    case JSON_OBJECT:
-        printf("(OBJECT:");
-        tree_inorder(&v->value.object, dump_object_node);
-        printf(")");
-        break;
-    default:
-        printf("(UNKNOWN)");
-        break;
-    }
-}
-
-static void
-test_size(const char *s, int expected) {
-    int actual;
-    JSON_PARSE_CTX ctx;
-    ctx.s = s;
-    ctx.size = strlen(s);
-    ctx.i = 0;
-    ctx.line = ctx.col = 0;
-    error_str[0] = error_str[511] = '\0';
-    actual = json_str_size(&ctx, 0);
-    if (ctx.i || ctx.line || ctx.col) {
-        printf("%s: FAILURE: json_str_size advanced our context\n", s);
-    }
-    if (actual < 0) {
-        printf("%s: %s: Error message \"%s\"\n", s, (expected < 0) ? "SUCCESS" : "FAILURE", error_str);
-    } else if (actual != expected) {
-        printf("%s: FAILURE: Expected %d, got %d\n", s, expected, actual);
-    } else {
-        printf("%s: SUCCESS\n", s);
-    }
-}
-
-int main (int argc, char **argv) {
-    const char *s = "  {\"\\u4e16\\u754c\\u597d\": 1.2, \"\\u03b1\\u03b2\\u03b3\": true, \"abc\": false}";
-    JSON_VALUE *v = json_parse(s, strlen(s));
-    json_dump(v); printf("\n");
-    json_free(v);
-    test_size("abc", -1);
-    test_size("\"abc", -1);
-    test_size("\"abc\"", 3);
-    test_size("\"\"", 0);
-    test_size("\"\\abc\"", -1);
-    test_size("\"a\\bc\"", 3);
-    test_size("\"\\u4f60\\u597d\"", 6);
-    return 0;
+        
+    return result;
 }
