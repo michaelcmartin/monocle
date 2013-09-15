@@ -41,7 +41,9 @@ $(OBJS): %.o: %.c
 # DO NOT DELETE
 
 src/audio.o: include/monocle.h
+src/event.o: include/monocle.h
 src/framebuffer.o: include/monocle.h
+src/json.o: src/json.h src/tree.h
 src/meta.o: include/monocle.h src/monocle_internal.h
 src/raw_data.o: include/monocle.h src/tree.h
 src/tree.o: src/tree.h
