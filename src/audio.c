@@ -20,27 +20,27 @@ struct struct_MNCL_SFX {
 };
 
 void
-mncl_play_music(const char *resource_name, int fade_in_ms)
+mncl_play_music_file(const char *pathname, int fade_in_ms)
 {
     SDL_RWops *bgm_rw;
-    int resource_name_size = strlen(resource_name) + 1;
-    if (current_bgm_name && !strcmp(resource_name, current_bgm_name)) {
+    int name_size = strlen(pathname) + 1;
+    if (current_bgm_name && !strcmp(pathname, current_bgm_name)) {
         /* We're already playing that music */
         return;
     }
     mncl_stop_music();
-    current_bgm_raw = mncl_acquire_raw(resource_name);
+    current_bgm_raw = mncl_acquire_raw(pathname);
     if (!current_bgm_raw) {
         /* TODO: Error code? */
         return;
     }
-    current_bgm_name = (char *)malloc(resource_name_size);
+    current_bgm_name = (char *)malloc(name_size);
     if (!current_bgm_name) {
         /* Life is pain if this happens */
         mncl_stop_music();
         return;
     }
-    strncpy(current_bgm_name, resource_name, resource_name_size);
+    strncpy(current_bgm_name, pathname, name_size);
 
     bgm_rw = SDL_RWFromMem(current_bgm_raw->data, current_bgm_raw->size);
     if (!bgm_rw) {

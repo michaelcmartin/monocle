@@ -76,7 +76,7 @@ main(int argc, char **argv)
 
     earth = mncl_alloc_spritesheet("earth.png");
     sfx = mncl_alloc_sfx("torpedo.wav");
-    mncl_play_music("march.it", 2000);
+    mncl_play_music_file("march.it", 2000);
 
     done = 0;
     countdown = 0;

@@ -90,7 +90,7 @@ extern MONOCULAR void mncl_draw_from_spritesheet(MNCL_SPRITESHEET *spritesheet,
 
 /* Music Component */
 
-extern MONOCULAR void mncl_play_music(const char *resource_name, int fade_in_ms);
+extern MONOCULAR void mncl_play_music_file(const char *pathname, int fade_in_ms);
 extern MONOCULAR void mncl_stop_music(void);
 extern MONOCULAR void mncl_fade_out_music(int ms);
 extern MONOCULAR void mncl_music_volume(int volume);
