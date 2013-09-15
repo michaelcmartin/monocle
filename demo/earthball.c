@@ -7,7 +7,8 @@ struct globe {
 };
 
 struct globe globes[16];
-MNCL_SPRITESHEET *earth;
+MNCL_SPRITESHEET *earthsheet;
+MNCL_SPRITE *earth;
 
 void
 instructions(void)
@@ -21,6 +22,29 @@ instructions(void)
     printf("    UP AND DOWN ARROW KEYS to change music volume\n");
     printf("    ESCAPE to quit with music fadeout\n");
     printf("    Close the window to quit immediately\n");
+}
+
+MNCL_SPRITE *
+make_earthball(void)
+{
+    int i;
+    MNCL_SPRITE *e;
+
+    if (!earthsheet) {
+        return NULL;
+    }
+    e = mncl_alloc_sprite(30);
+    if (!e) {
+        return NULL;
+    }
+    e->w = e->h = 64;
+    e->hot_x = e->hot_y = 0;
+    for (i = 0; i < 30; ++i) {
+        e->frames[i].sheet = earthsheet;
+        e->frames[i].x = (i % 8) * 64;
+        e->frames[i].y = (i / 8) * 64;
+    }
+    return e;
 }
 
 void
@@ -52,7 +76,7 @@ render(void)
     int i;
     mncl_draw_rect(256, 112, 256, 256, 128, 128, 128);
     for (i = 0; i < 16; ++i) {
-        mncl_draw_from_spritesheet(earth, globes[i].x, globes[i].y, (globes[i].frame % 8) * 64, (globes[i].frame / 8) * 64, 64, 64);
+        mncl_draw_sprite(earth, globes[i].x, globes[i].y, globes[i].frame);
     }
 }
 
@@ -74,7 +98,8 @@ main(int argc, char **argv)
     mncl_config_video(768, 480, 0, 0);
     mncl_add_resource_zipfile("earthball-res.zip");
 
-    earth = mncl_alloc_spritesheet("earth.png");
+    earthsheet = mncl_alloc_spritesheet("earth.png");
+    earth = make_earthball();
     sfx = mncl_alloc_sfx("torpedo.wav");
     mncl_play_music_file("march.it", 2000);
 
@@ -159,7 +184,8 @@ main(int argc, char **argv)
 
     mncl_stop_music();
     mncl_free_sfx(sfx);
-    mncl_free_spritesheet(earth);
+    mncl_free_sprite(earth);
+    mncl_free_spritesheet(earthsheet);
     mncl_uninit();
     return 0;
 }

@@ -183,3 +183,39 @@ mncl_draw_from_spritesheet(MNCL_SPRITESHEET *spritesheet,
     src.h = my_h;
     SDL_BlitSurface(spritesheet->used, &src, screen, &dest);
 }
+
+MNCL_SPRITE *
+mncl_alloc_sprite(int nframes)
+{
+    size_t size = sizeof(MNCL_SPRITE) + sizeof(MNCL_FRAME) * nframes;
+    MNCL_SPRITE *result = (MNCL_SPRITE *)malloc(size);
+    if (!result) {
+        return NULL;
+    }
+    memset(result, 0, size);
+    result->nframes = nframes;
+    return result;
+}
+
+void
+mncl_free_sprite(MNCL_SPRITE *sprite)
+{
+    if (sprite) {
+        free(sprite);
+    }
+}
+
+void
+mncl_draw_sprite(MNCL_SPRITE *s, int x, int y, int frame)
+{
+    MNCL_FRAME *f;
+    if (!s) {
+        return;
+    }
+    frame %= s->nframes;
+    if (frame < 0) {
+        frame += s->nframes;
+    }
+    f = s->frames + frame;
+    mncl_draw_from_spritesheet(f->sheet, x-s->hot_x, y-s->hot_y, f->x, f->y, s->w, s->h);
+}

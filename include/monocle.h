@@ -132,7 +132,7 @@ typedef enum {
     MNCL_NUM_EVENTS
 } MNCL_EVENT_TYPE;
 
-typedef struct mncl_event_struct {
+typedef struct struct_MNCL_EVENT {
     MNCL_EVENT_TYPE type;
     int subscriber;
     union {
@@ -155,6 +155,24 @@ extern MONOCULAR int mncl_event_mouse_button(MNCL_EVENT *evt);
 extern MONOCULAR int mncl_event_joy_stick(MNCL_EVENT *evt);
 extern MONOCULAR int mncl_event_joy_index(MNCL_EVENT *evt);
 extern MONOCULAR int mncl_event_joy_value(MNCL_EVENT *evt);
+
+/* Sprite component. Everything but mncl_draw_sprite may eventually be
+ * internalized. */
+
+typedef struct struct_MNCL_FRAME {
+    MNCL_SPRITESHEET *sheet;
+    int x, y;
+} MNCL_FRAME;
+
+typedef struct struct_MNCL_SPRITE {
+    int w, h, hot_x, hot_y, hit_x, hit_y, hit_w, hit_h;
+    int nframes;
+    MNCL_FRAME frames[0];
+} MNCL_SPRITE;
+
+extern MONOCULAR MNCL_SPRITE *mncl_alloc_sprite(int nframes);
+extern MONOCULAR void mncl_free_sprite(MNCL_SPRITE *sprite);
+extern MONOCULAR void mncl_draw_sprite(MNCL_SPRITE *s, int x, int y, int frame);
 
 #ifdef __cplusplus
 }
