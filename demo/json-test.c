@@ -95,6 +95,19 @@ int main (int argc, char **argv) {
     }
     v = json_parse(s, strlen(s));
     json_dump(v); printf("\n");
+    if (argc > 2) {
+        int i;
+        for (i = 2; i < argc; ++i) {
+            JSON_VALUE *val = json_lookup(v, argv[i]);
+            printf("%s: ", argv[i]);
+            if (!val) {
+                printf("Not found");
+            } else {
+                json_dump(val);
+            }
+            printf("\n");
+        }
+    }
     json_free(v);
     test_size("abc", -1);
     test_size("\"abc", -1);

@@ -6,9 +6,15 @@
 
 typedef struct {
     TREE_NODE header;
+    const char *key;
     JSON_VALUE *value;
-    char key[0];
+    char data[0];
 } JSON_OBJECT_NODE;
+
+typedef struct {
+    TREE_NODE header;
+    const char *key;
+} JSON_SEARCH_NODE;
 
 /* JSON Parse context. */
 typedef struct {
@@ -574,7 +580,8 @@ object(JSON_PARSE_CTX *ctx, int scan)
                 snprintf(error_str, 512, "%d:%d: Out of memory", ctx->line, ctx->col);
                 return NULL;
             }
-            json_strcpy(curnode->key, ctx);
+            json_strcpy(curnode->data, ctx);
+            curnode->key = curnode->data;
         }
         space(ctx);
         ch = readch(ctx);
@@ -650,4 +657,20 @@ json_parse(const char *data, size_t size)
     }
         
     return result;
+}
+
+JSON_VALUE *
+json_lookup(JSON_VALUE *map, const char *key)
+{
+    JSON_SEARCH_NODE n;
+    JSON_OBJECT_NODE *result;
+    if (!map || map->tag != JSON_OBJECT) {
+        return NULL;
+    }
+    n.key = key;
+    result = (JSON_OBJECT_NODE *)tree_find(&map->value.object, (TREE_NODE *)(&n), json_object_node_cmp);
+    if (result) {
+        return result->value;
+    }
+    return NULL;
 }

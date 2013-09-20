@@ -26,6 +26,7 @@ typedef struct json_value_ {
 
 JSON_VALUE *json_parse(const char *data, size_t size);
 const char *json_error();
+JSON_VALUE *json_lookup(JSON_VALUE *map, const char *key);
 void json_free (JSON_VALUE *json);
 
 #endif
