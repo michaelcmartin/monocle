@@ -4,18 +4,6 @@
 #include <string.h>
 #include "json.h"
 
-typedef struct {
-    TREE_NODE header;
-    const char *key;
-    JSON_VALUE *value;
-    char data[0];
-} JSON_OBJECT_NODE;
-
-typedef struct {
-    TREE_NODE header;
-    const char *key;
-} JSON_SEARCH_NODE;
-
 /* JSON Parse context. */
 typedef struct {
     const char *s; /* The string containing the JSON to parse. NOT
@@ -47,15 +35,9 @@ json_error()
     return error_str;
 }
 
-static int
-json_object_node_cmp(TREE_NODE *a, TREE_NODE *b)
-{
-    return strcmp(((JSON_OBJECT_NODE *)a)->key, ((JSON_OBJECT_NODE *)b)->key);
-}
-
 static void
 free_object_node(TREE_NODE *node) {
-    JSON_OBJECT_NODE *n = (JSON_OBJECT_NODE *)node;
+    KEY_VALUE_NODE *n = (KEY_VALUE_NODE *)node;
     json_free(n->value);
     free(n);
 }
@@ -544,7 +526,7 @@ object(JSON_PARSE_CTX *ctx, int scan)
 
     while (1) {
         int keysize;
-        JSON_OBJECT_NODE *curnode = NULL;
+        KEY_VALUE_NODE *curnode = NULL;
         JSON_VALUE *val;
 
         space(ctx);
@@ -574,7 +556,7 @@ object(JSON_PARSE_CTX *ctx, int scan)
             return NULL;
         }
         if (!scan) {
-            curnode = malloc(sizeof(JSON_OBJECT_NODE) + keysize + 1);
+            curnode = malloc(sizeof(KEY_VALUE_NODE) + keysize + 1);
             if (!curnode) {
                 json_free(result);
                 snprintf(error_str, 512, "%d:%d: Out of memory", ctx->line, ctx->col);
@@ -601,7 +583,7 @@ object(JSON_PARSE_CTX *ctx, int scan)
         }
         if (!scan) {
             curnode->value = val;
-            tree_insert(&result->value.object, (TREE_NODE *)curnode, json_object_node_cmp);
+            tree_insert(&result->value.object, (TREE_NODE *)curnode, key_value_node_cmp);
         }
     }
     return result;
@@ -662,13 +644,13 @@ json_parse(const char *data, size_t size)
 JSON_VALUE *
 json_lookup(JSON_VALUE *map, const char *key)
 {
-    JSON_SEARCH_NODE n;
-    JSON_OBJECT_NODE *result;
+    KEY_SEARCH_NODE n;
+    KEY_VALUE_NODE *result;
     if (!map || map->tag != JSON_OBJECT) {
         return NULL;
     }
     n.key = key;
-    result = (JSON_OBJECT_NODE *)tree_find(&map->value.object, (TREE_NODE *)(&n), json_object_node_cmp);
+    result = (KEY_VALUE_NODE *)tree_find(&map->value.object, (TREE_NODE *)(&n), key_value_node_cmp);
     if (result) {
         return result->value;
     }

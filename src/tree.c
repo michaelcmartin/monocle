@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <string.h>
 #include "tree.h"
 /**********************************************************************
  * tree.c - binary search trees implementation
@@ -15,12 +16,32 @@
  * simpler and thus more compact than the FreeBSD version; this also
  * will hopefully make it easier to use. The FreeBSD implementation is
  * built largely out of macros and generates code roughly similar to
- * C++ template expansion. This implementation is a simpler and built
- * in a form more analogous to single inheritance. As long as you
- * aren't trying to make a single chunk of data be part of two
- * separate intrusive-pointer-based data structures, this should
- * meet your needs.
+ * C++ template expansion. This implementation is simpler and built in
+ * a form more analogous to single inheritance. As long as you aren't
+ * trying to make a single chunk of data be part of two separate
+ * intrusive-pointer-based data structures, this should meet your
+ * needs.
  **********************************************************************/
+
+int
+key_value_node_cmp(TREE_NODE *a, TREE_NODE *b)
+{
+    return strcmp(((KEY_VALUE_NODE *)a)->key, ((KEY_VALUE_NODE *)b)->key);
+}
+
+KEY_VALUE_NODE *
+key_value_node_alloc(const char *key, void *value)
+{
+    int size = strlen(key)+1;
+    KEY_VALUE_NODE *result = (KEY_VALUE_NODE *)malloc(sizeof(KEY_VALUE_NODE) + size);
+    if (!result) {
+        return NULL;
+    }
+    result->value = value;
+    strncpy(result->data, key, size);
+    result->key = &(result->data[0]);
+    return result;
+}
 
 TREE_NODE *
 tree_minimum(TREE *t)

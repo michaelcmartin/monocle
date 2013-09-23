@@ -31,6 +31,32 @@ typedef struct tree_core {
 } TREE;
 
 /**********************************************************************
+ * These structures show up far too regularly to justify redefining
+ * special purpose versions of them. These map key strings to
+ * heap-allocated value objects. The key is generally held within the
+ * "data" array, and the value might be as well,
+ * depending. KEY_SEARCH_NODE is a "superclass" of KEY_VALUE_NODE that
+ * can be stack-allocated for calls to tree_find, below. The
+ * key_value_node_cmp function is suitable for use as a TREE_CMP
+ * parameter, also below.
+ **********************************************************************/
+
+typedef struct {
+    TREE_NODE header;
+    const char *key;
+    void *value;
+    char data[0];
+} KEY_VALUE_NODE;
+
+typedef struct {
+    TREE_NODE header;
+    const char *key;
+} KEY_SEARCH_NODE;
+
+int key_value_node_cmp(TREE_NODE *a, TREE_NODE *b);
+KEY_VALUE_NODE *key_value_node_alloc(const char *key, void *value);
+
+/**********************************************************************
  * Insert or find elements in the tree. Insert does not require unique
  * keys, but will maintain "stability" - that is, items that are
  * inserted later but are equal to elements currently in the tree will

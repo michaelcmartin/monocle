@@ -5,7 +5,7 @@ void json_dump(JSON_VALUE *);
 
 static void
 dump_object_node(TREE_NODE *node) {
-    JSON_OBJECT_NODE *n = (JSON_OBJECT_NODE *)node;
+    KEY_VALUE_NODE *n = (KEY_VALUE_NODE *)node;
     printf("\n\t\"%s\": ", n->key);
     json_dump(n->value);
 }
