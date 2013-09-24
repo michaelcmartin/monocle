@@ -7,7 +7,6 @@ struct globe {
 };
 
 struct globe globes[16];
-MNCL_SPRITESHEET *earthsheet;
 MNCL_SPRITE *earth;
 
 void
@@ -22,29 +21,6 @@ instructions(void)
     printf("    UP AND DOWN ARROW KEYS to change music volume\n");
     printf("    ESCAPE to quit with music fadeout\n");
     printf("    Close the window to quit immediately\n");
-}
-
-MNCL_SPRITE *
-make_earthball(void)
-{
-    int i;
-    MNCL_SPRITE *e;
-
-    if (!earthsheet) {
-        return NULL;
-    }
-    e = mncl_alloc_sprite(30);
-    if (!e) {
-        return NULL;
-    }
-    e->w = e->h = 64;
-    e->hot_x = e->hot_y = 0;
-    for (i = 0; i < 30; ++i) {
-        e->frames[i].sheet = earthsheet;
-        e->frames[i].x = (i % 8) * 64;
-        e->frames[i].y = (i / 8) * 64;
-    }
-    return e;
 }
 
 void
@@ -98,10 +74,10 @@ main(int argc, char **argv)
     mncl_config_video(768, 480, 0, 0);
     mncl_add_resource_zipfile("earthball-res.zip");
 
-    earthsheet = mncl_alloc_spritesheet("earth.png");
-    earth = make_earthball();
-    sfx = mncl_alloc_sfx("torpedo.wav");
-    mncl_play_music_file("march.it", 2000);
+    mncl_load_resmap("earthball.json");
+    earth = mncl_sprite_resource("earth");
+    sfx = mncl_sfx_resource("sfx");
+    mncl_play_music_resource("bgm", 2000);
 
     done = 0;
     countdown = 0;
@@ -183,9 +159,6 @@ main(int argc, char **argv)
     }
 
     mncl_stop_music();
-    mncl_free_sfx(sfx);
-    mncl_free_sprite(earth);
-    mncl_free_spritesheet(earthsheet);
     mncl_uninit();
     return 0;
 }

@@ -174,6 +174,17 @@ extern MONOCULAR MNCL_SPRITE *mncl_alloc_sprite(int nframes);
 extern MONOCULAR void mncl_free_sprite(MNCL_SPRITE *sprite);
 extern MONOCULAR void mncl_draw_sprite(MNCL_SPRITE *s, int x, int y, int frame);
 
+/* Resource component */
+extern MONOCULAR void mncl_load_resmap(const char *path);
+extern MONOCULAR void mncl_unload_resmap(const char *path);
+extern MONOCULAR void mncl_unload_all_resources(void);
+
+extern MONOCULAR MNCL_RAW *mncl_raw_resource(const char *resource);
+extern MONOCULAR MNCL_SPRITESHEET *mncl_spritesheet_resource(const char *resource);
+extern MONOCULAR MNCL_SPRITE *mncl_sprite_resource(const char *resource);
+extern MONOCULAR MNCL_SFX *mncl_sfx_resource(const char *resource);
+extern MONOCULAR void mncl_play_music_resource(const char *resource, int fade_in_ms);
+
 #ifdef __cplusplus
 }
 #endif

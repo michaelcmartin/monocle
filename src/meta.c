@@ -15,6 +15,7 @@ mncl_init(void)
 void
 mncl_uninit()
 {
+    mncl_unload_all_resources();
     Mix_CloseAudio();
     Mix_Quit();
     SDL_Quit();

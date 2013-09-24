@@ -1,6 +1,6 @@
 {
     "spritesheet": { "earth": "earth.png" },
-    "sound": { "sfx": "torpedo.wav" },
+    "sfx": { "sfx": "torpedo.wav" },
     "music": { "bgm": "march.it" },
     "sprite": {
         "earth": { "width": 64,
