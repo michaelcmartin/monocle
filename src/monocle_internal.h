@@ -8,6 +8,7 @@ extern "C" {
 /* This isn't really exciting, it just defines some symbols used cross-subsystem but not exported. */
 
 void mncl_uninit_raw_system(void);
+void mncl_renormalize_all_spritesheets(void);
 
 #ifdef __cplusplus
 }

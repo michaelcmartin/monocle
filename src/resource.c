@@ -290,3 +290,17 @@ mncl_play_music_resource(const char *resource, int fade_in_ms)
         mncl_play_music_file(musicval, fade_in_ms);
     }
 }
+
+/* One could imagine reworking this into a more generalized
+ * resource visitor, but this is the only case that the engine
+ * really has to do this behind the user's back */
+
+void
+mncl_renormalize_all_spritesheets(void)
+{
+    TREE_NODE *node = tree_minimum(&spritesheet.values);
+    while (node) {
+        mncl_normalize_spritesheet((MNCL_SPRITESHEET *)(((KEY_VALUE_NODE *)node)->value));
+        node = tree_next(node);
+    }
+}

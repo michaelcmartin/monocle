@@ -24,9 +24,7 @@ mncl_config_video(int width, int height, int fullscreen, int flags)
     is_fullscreen = fullscreen;
     clear_color = SDL_MapRGB(screen->format, 0, 0, 0);
     SDL_ShowCursor((fullscreen && hide_mouse) ? SDL_DISABLE : SDL_ENABLE);
-    /* TODO: We should also normalize all the spritesheets we know
-     * about, but we can't do that until the resource manager is
-     * done */
+    mncl_renormalize_all_spritesheets();
     return 0;
 }
 
