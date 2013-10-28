@@ -2,7 +2,7 @@
 #define JSON_H_
 
 #include <stdlib.h>
-#include "tree.h"
+#include "monocle.h"
 
 typedef enum {
     JSON_NULL,
@@ -20,7 +20,7 @@ typedef struct json_value_ {
         double number;
         char *string;
         struct { int size; struct json_value_ **data; } array;
-        TREE object;
+        MNCL_KV *object;
     } value;
 } JSON_VALUE;
 

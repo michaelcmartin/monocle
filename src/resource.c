@@ -4,17 +4,12 @@
 #include "tree.h"
 #include "json.h"
 
-/* Possible TODO here: refactor all this to use MNCL_KV instead of
- * TREE directly */
-
 typedef void *(*ALLOC_FN)(JSON_VALUE *);
-typedef void (*FREE_FN)(void *);
 
 typedef struct res_class {
-    TREE values;
+    MNCL_KV values;
     const char *type;
     ALLOC_FN alloc_fn;
-    FREE_FN free_fn;
 } RES_CLASS;
 
 static void *
@@ -137,55 +132,36 @@ music_alloc(JSON_VALUE *arg)
     return NULL;
 }
 
-static RES_CLASS raw = { { NULL }, "raw", raw_alloc, (FREE_FN)mncl_release_raw };
-static RES_CLASS spritesheet={ { NULL }, "spritesheet", spritesheet_alloc, (FREE_FN)mncl_free_spritesheet };
-static RES_CLASS sprite = { { NULL }, "sprite", sprite_alloc, (FREE_FN)mncl_free_sprite };
-static RES_CLASS sfx = { { NULL }, "sfx", sfx_alloc, (FREE_FN)mncl_free_sfx };
-static RES_CLASS music = { { NULL }, "music", music_alloc, free };
+static RES_CLASS raw = { { { NULL }, (MNCL_KV_DELETER)mncl_release_raw }, "raw", raw_alloc };
+static RES_CLASS spritesheet = { { { NULL }, (MNCL_KV_DELETER)mncl_free_spritesheet }, "spritesheet", spritesheet_alloc };
+static RES_CLASS sprite = { { { NULL }, (MNCL_KV_DELETER)mncl_free_sprite },  "sprite", sprite_alloc };
+static RES_CLASS sfx = { { { NULL }, (MNCL_KV_DELETER)mncl_free_sfx }, "sfx", sfx_alloc };
+static RES_CLASS music = { { { NULL }, free }, "music", music_alloc };
 
 static RES_CLASS *resclasses[] = { &raw, &spritesheet, &sprite, &sfx, &music, NULL };
 
 static void
-process_resource_type(JSON_VALUE *resmap, RES_CLASS *rc, int allocating)
+alloc_resource_type(const char *key, void *value, void *user)
 {
-    JSON_VALUE *top = json_lookup(resmap, rc->type);
-    if (top && top->tag == JSON_OBJECT) {
-        KEY_VALUE_NODE *i = (KEY_VALUE_NODE *)tree_minimum(&top->value.object);
-        while (i) {
-            void *val = allocating ? rc->alloc_fn((JSON_VALUE *)i->value) : NULL;
-            if (val || !allocating) {
-                KEY_SEARCH_NODE seek;
-                KEY_VALUE_NODE *result;
-                seek.key=i->key;
-                result = (KEY_VALUE_NODE *)tree_find(&rc->values, (TREE_NODE *)&seek, key_value_node_cmp);
-                if (result) {
-                    rc->free_fn(result->value);
-                    if (allocating) {
-                        printf("WARNING: overwriting %s resource %s\n", rc->type, i->key);
-                        result->value = val;
-                    }
-                } else {
-                    if (allocating) {
-                        result = key_value_node_alloc(i->key, val);
-                        if (!result) {
-                            printf("WARNING: Could not store %s resource %s\n", rc->type, i->key);
-                            rc->free_fn(val);
-                        } else {
-                            printf("Loading %s resource %s\n", rc->type, result->key);
-                            tree_insert(&rc->values, (TREE_NODE *)result, key_value_node_cmp);
-                        }
-                    } else {
-                        printf("WARNING: %s resource %s has already been deleted\n", rc->type, i->key);
-                    }
-                }
-            } else {
-                printf("WARNING: Could not load %s resource %s\n", rc->type, i->key);
-            }
-            i = (KEY_VALUE_NODE *)tree_next((TREE_NODE *)i);
+    RES_CLASS *rc = (RES_CLASS *)user;
+    void *val = rc->alloc_fn((JSON_VALUE *)value);
+    if (val) {
+        void *old_val = mncl_kv_find(&rc->values, key);
+        if (old_val) {
+            printf("WARNING: overwriting %s resource %s\n", rc->type, key);
         }
-    } else {
-        printf("WARNING: No %s resources\n", rc->type);
+        if (!mncl_kv_insert(&rc->values, key, val)) {
+            printf("WARNING: Could not store %s resource %s\n", rc->type, key);
+            rc->values.deleter(val);
+        }
     }
+}
+
+static void
+free_resource_type (const char *key, void *value, void *user)
+{
+    RES_CLASS *rc = (RES_CLASS *)user;
+    mncl_kv_delete(&rc->values, key);
 }
 
 void
@@ -201,7 +177,10 @@ mncl_load_resmap(const char *path)
     if (resmap) {
         int i;
         for (i = 0; resclasses[i]; ++i) {
-            process_resource_type(resmap, resclasses[i], 1);
+            JSON_VALUE *top = json_lookup(resmap, resclasses[i]->type);
+            if (top && top->tag == JSON_OBJECT) {
+                mncl_kv_foreach(top->value.object, alloc_resource_type, resclasses[i]);
+            }
         }
     }
 }
@@ -221,8 +200,21 @@ mncl_unload_resmap(const char *path)
     if (resmap) {
         int i;
         for (i = 0; resclasses[i]; ++i) {
-            process_resource_type(resmap, resclasses[i], 0);
+            JSON_VALUE *top = json_lookup(resmap, resclasses[i]->type);
+            if (top && top->tag == JSON_OBJECT) {
+                mncl_kv_foreach(top->value.object, free_resource_type, resclasses[i]);
+            }
         }
+    }
+}
+
+static void
+delete_value (const char *key, void *val, void *user)
+{
+    (void)key;
+    if (val && user) {
+        MNCL_KV_DELETER deleter = (MNCL_KV_DELETER)user;
+        deleter(val);
     }
 }
 
@@ -231,60 +223,42 @@ mncl_unload_all_resources(void)
 {
     int i;
     for (i = 0; resclasses[i]; ++i) {
-        TREE_NODE *node = tree_minimum(&(resclasses[i]->values));
-        while (node) {
-            resclasses[i]->free_fn(((KEY_VALUE_NODE *)node)->value);
-            node = tree_next(node);
-        }
-        tree_postorder(&(resclasses[i]->values), (TREE_VISITOR)free);
-        resclasses[i]->values.root = NULL;
+        mncl_kv_foreach(&resclasses[i]->values, delete_value, resclasses[i]->values.deleter);
+        tree_postorder(&(resclasses[i]->values.tree), (TREE_VISITOR)free);
+        resclasses[i]->values.tree.root = NULL;
     }
 }
 
 /* Locators */
 
-static void *
-find_res(TREE *map, const char *key)
-{
-    KEY_SEARCH_NODE seek;
-    KEY_VALUE_NODE *result;
-    seek.key = key;
-    result = (KEY_VALUE_NODE *)tree_find(map, (TREE_NODE *)&seek, key_value_node_cmp);
-    if (result) {
-        return result->value;
-    }
-    printf("Not found\n");
-    return NULL;
-}
-
 MNCL_RAW *
 mncl_raw_resource(const char *resource)
 {
-    return (MNCL_RAW *)find_res(&raw.values, resource);
+    return (MNCL_RAW *)mncl_kv_find(&raw.values, resource);
 }
 
 MNCL_SPRITESHEET *
 mncl_spritesheet_resource(const char *resource)
 {
-    return (MNCL_SPRITESHEET *)find_res(&spritesheet.values, resource);
+    return (MNCL_SPRITESHEET *)mncl_kv_find(&spritesheet.values, resource);
 }
 
 MNCL_SPRITE *
 mncl_sprite_resource(const char *resource)
 {
-    return (MNCL_SPRITE *)find_res(&sprite.values, resource);
+    return (MNCL_SPRITE *)mncl_kv_find(&sprite.values, resource);
 }
 
 MNCL_SFX *
 mncl_sfx_resource(const char *resource)
 {
-    return (MNCL_SFX *)find_res(&sfx.values, resource);
+    return (MNCL_SFX *)mncl_kv_find(&sfx.values, resource);
 }
 
 void
 mncl_play_music_resource(const char *resource, int fade_in_ms)
 {
-    char *musicval = (char *)find_res(&music.values, resource);
+    char *musicval = (char *)mncl_kv_find(&music.values, resource);
     
     if (musicval) {
         mncl_play_music_file(musicval, fade_in_ms);
@@ -295,12 +269,16 @@ mncl_play_music_resource(const char *resource, int fade_in_ms)
  * resource visitor, but this is the only case that the engine
  * really has to do this behind the user's back */
 
+static void
+normalize_visitor (const char *key, void *spritesheet, void *ignored)
+{
+    (void)key;
+    (void)ignored;
+    mncl_normalize_spritesheet((MNCL_SPRITESHEET *)spritesheet);
+}
+
 void
 mncl_renormalize_all_spritesheets(void)
 {
-    TREE_NODE *node = tree_minimum(&spritesheet.values);
-    while (node) {
-        mncl_normalize_spritesheet((MNCL_SPRITESHEET *)(((KEY_VALUE_NODE *)node)->value));
-        node = tree_next(node);
-    }
+    mncl_kv_foreach(&spritesheet.values, normalize_visitor, NULL);
 }

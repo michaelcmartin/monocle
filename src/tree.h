@@ -1,6 +1,8 @@
 #ifndef TREE_H_
 #define TREE_H_
 
+#include "monocle.h"
+
 /**********************************************************************
  * tree.h - binary search trees
  *
@@ -31,14 +33,17 @@ typedef struct tree_core {
 } TREE;
 
 /**********************************************************************
- * These structures show up far too regularly to justify redefining
- * special purpose versions of them. These map key strings to
- * heap-allocated value objects. The key is generally held within the
- * "data" array, and the value might be as well,
- * depending. KEY_SEARCH_NODE is a "superclass" of KEY_VALUE_NODE that
- * can be stack-allocated for calls to tree_find, below. The
- * key_value_node_cmp function is suitable for use as a TREE_CMP
- * parameter, also below.
+ * Monocle itself exposes a subset of tree functionality as key-value
+ * maps. These use the structures above, but also package cleanup
+ * routines. Those routines are defined in monocle.h, not here.
+ *
+ * MNCL_KV maps key strings to value objects . The key is held within
+ * the "data" array, and the client provides a deleter for the value
+ * pointers. If those values are, say, compile-time constant strings,
+ * there is no deleter. KEY_SEARCH_NODE is a "superclass" of
+ * KEY_VALUE_NODE that can be stack-allocated for calls to tree_find,
+ * below. The key_value_node_cmp function is suitable for use as a
+ * TREE_CMP parameter, also below.
  **********************************************************************/
 
 typedef struct {
@@ -55,6 +60,11 @@ typedef struct {
 
 int key_value_node_cmp(TREE_NODE *a, TREE_NODE *b);
 KEY_VALUE_NODE *key_value_node_alloc(const char *key, void *value);
+
+struct struct_MNCL_KV {
+    TREE tree;
+    MNCL_KV_DELETER deleter;
+};
 
 /**********************************************************************
  * Insert or find elements in the tree. Insert does not require unique

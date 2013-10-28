@@ -35,13 +35,6 @@ json_error()
     return error_str;
 }
 
-static void
-free_object_node(TREE_NODE *node) {
-    KEY_VALUE_NODE *n = (KEY_VALUE_NODE *)node;
-    json_free(n->value);
-    free(n);
-}
-
 void
 json_free (JSON_VALUE *json)
 {
@@ -58,7 +51,7 @@ json_free (JSON_VALUE *json)
         }
         break;
     case JSON_OBJECT:
-        tree_postorder(&json->value.object, free_object_node);
+        mncl_free_kv(json->value.object);
         break;
     default:
         /* No other types have subvalues */
@@ -521,12 +514,12 @@ object(JSON_PARSE_CTX *ctx, int scan)
             return NULL;
         }
         result->tag = JSON_OBJECT;
-        result->value.object.root = NULL;
+        result->value.object = mncl_alloc_kv((MNCL_KV_DELETER)json_free);
     }
 
     while (1) {
         int keysize;
-        KEY_VALUE_NODE *curnode = NULL;
+        char *curkey = NULL;
         JSON_VALUE *val;
 
         space(ctx);
@@ -556,19 +549,19 @@ object(JSON_PARSE_CTX *ctx, int scan)
             return NULL;
         }
         if (!scan) {
-            curnode = malloc(sizeof(KEY_VALUE_NODE) + keysize + 1);
-            if (!curnode) {
+            curkey = malloc(keysize + 1);
+            if (!curkey) {
                 json_free(result);
                 snprintf(error_str, 512, "%d:%d: Out of memory", ctx->line, ctx->col);
                 return NULL;
             }
-            json_strcpy(curnode->data, ctx);
-            curnode->key = curnode->data;
+            json_strcpy(curkey, ctx);
         }
         space(ctx);
         ch = readch(ctx);
         if (ch != ':') {
             if (!scan) {
+                free(curkey);
                 json_free(result);
             }
             snprintf(error_str, 512, "%d:%d: Expected ':'", ctx->line, ctx->col);
@@ -577,13 +570,14 @@ object(JSON_PARSE_CTX *ctx, int scan)
         val = value(ctx, scan);
         if (!val) {
             if (!scan) {
+                free(curkey);
                 json_free(result);
             }
             return NULL;
         }
         if (!scan) {
-            curnode->value = val;
-            tree_insert(&result->value.object, (TREE_NODE *)curnode, key_value_node_cmp);
+            mncl_kv_insert(result->value.object, curkey, val);
+            free(curkey);
         }
     }
     return result;
@@ -644,15 +638,8 @@ json_parse(const char *data, size_t size)
 JSON_VALUE *
 json_lookup(JSON_VALUE *map, const char *key)
 {
-    KEY_SEARCH_NODE n;
-    KEY_VALUE_NODE *result;
     if (!map || map->tag != JSON_OBJECT) {
         return NULL;
     }
-    n.key = key;
-    result = (KEY_VALUE_NODE *)tree_find(&map->value.object, (TREE_NODE *)(&n), key_value_node_cmp);
-    if (result) {
-        return result->value;
-    }
-    return NULL;
+    return mncl_kv_find(map->value.object, key);
 }

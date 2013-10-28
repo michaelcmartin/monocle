@@ -43,6 +43,105 @@ key_value_node_alloc(const char *key, void *value)
     return result;
 }
 
+MNCL_KV *
+mncl_alloc_kv(MNCL_KV_DELETER deleter)
+{
+    MNCL_KV *result = malloc(sizeof(MNCL_KV));
+    if (!result) {
+        return NULL;
+    }
+    result->tree.root = NULL;
+    result->deleter = deleter;
+    return result;
+}
+
+void
+mncl_free_kv(MNCL_KV *kv)
+{
+    TREE_NODE *node;
+    if (!kv) {
+        return;
+    }
+    node = tree_minimum(&kv->tree);
+    while (node) {
+        kv->deleter(((KEY_VALUE_NODE *)node)->value);
+        node = tree_next(node);
+    }
+    tree_postorder (&kv->tree, (TREE_VISITOR)free);
+    free(kv);
+}
+
+int
+mncl_kv_insert(MNCL_KV *kv, const char *key, void *value)
+{
+    KEY_SEARCH_NODE seek;
+    KEY_VALUE_NODE *result;
+    if (!kv) {
+        return 0;
+    }
+    seek.key=key;
+    result = (KEY_VALUE_NODE *)tree_find(&kv->tree, (TREE_NODE *)&seek, key_value_node_cmp);
+    if (result) {
+        kv->deleter(result->value);
+        result->value = value;
+    } else {
+        result = key_value_node_alloc(key, value);
+        if (!result) {
+            return 0;
+        } else {
+            tree_insert(&kv->tree, (TREE_NODE *)result, key_value_node_cmp);
+        }
+    }
+    return 1;
+}
+
+void *
+mncl_kv_find(MNCL_KV *kv, const char *key)
+{
+    KEY_SEARCH_NODE seek;
+    KEY_VALUE_NODE *result;
+    if (!kv) {
+        return NULL;
+    }
+    seek.key = key;
+    result = (KEY_VALUE_NODE *)tree_find(&kv->tree, (TREE_NODE *)&seek, key_value_node_cmp);
+    if (result) {
+        return result->value;
+    }
+    return NULL;
+}
+
+void
+mncl_kv_delete(MNCL_KV *kv, const char *key)
+{
+    KEY_SEARCH_NODE seek;
+    KEY_VALUE_NODE *result;
+    if (!kv) {
+        return;
+    }
+    seek.key = key;
+    result = (KEY_VALUE_NODE *)tree_find(&kv->tree, (TREE_NODE *)&seek, key_value_node_cmp);
+    if (result) {
+        kv->deleter(result->value);
+        tree_delete(&kv->tree, (TREE_NODE *)result);
+    }
+}
+
+void
+mncl_kv_foreach(MNCL_KV *kv, MNCL_KV_VALUE_FN fn, void *user)
+{
+    TREE_NODE *node;
+    if (!kv) {
+        return;
+    }
+    node = tree_minimum(&kv->tree);
+    while (node) {
+        KEY_VALUE_NODE *kvn = (KEY_VALUE_NODE *)node;
+        fn(kvn->key, kvn->value, user);
+        node = tree_next(node);
+    }
+}
+
 TREE_NODE *
 tree_minimum(TREE *t)
 {

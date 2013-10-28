@@ -2,6 +2,7 @@
 #include <SDL_image.h>
 #include <stdio.h>
 #include "monocle.h"
+#include "monocle_internal.h"
 
 /* This file contains the framebuffer component and the spritesheet
  * component, since both need to talk to screen, and nobody else

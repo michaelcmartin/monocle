@@ -4,12 +4,11 @@
 void json_dump(JSON_VALUE *);
 
 static void
-dump_object_node(TREE_NODE *node) {
-    KEY_VALUE_NODE *n = (KEY_VALUE_NODE *)node;
-    printf("\n\t\"%s\": ", n->key);
-    json_dump(n->value);
+dump_object_node(const char *key, void *value, void *unused) {
+    (void)unused;
+    printf("\n\t\"%s\": ", key);
+    json_dump((JSON_VALUE *)value);
 }
-
 
 void
 json_dump(JSON_VALUE *v)
@@ -44,7 +43,7 @@ json_dump(JSON_VALUE *v)
     break;
     case JSON_OBJECT:
         printf("(OBJECT:");
-        tree_inorder(&v->value.object, dump_object_node);
+        mncl_kv_foreach(v->value.object, dump_object_node, NULL);
         printf(")");
         break;
     default:

@@ -59,6 +59,22 @@ extern MONOCULAR float mncl_raw_f32be(MNCL_RAW *raw, int offset);
 extern MONOCULAR double mncl_raw_f64le(MNCL_RAW *raw, int offset);
 extern MONOCULAR double mncl_raw_f64be(MNCL_RAW *raw, int offset);
 
+/* Key-value map component */
+
+struct struct_MNCL_KV;
+typedef struct struct_MNCL_KV MNCL_KV;
+typedef void (*MNCL_KV_DELETER)(void *value);
+typedef void (*MNCL_KV_VALUE_FN)(const char *key, void *value, void *user);
+
+extern MONOCULAR MNCL_KV *mncl_alloc_kv(MNCL_KV_DELETER deleter);
+extern MONOCULAR void mncl_free_kv(MNCL_KV *kv);
+
+extern MONOCULAR int mncl_kv_insert(MNCL_KV *kv, const char *key, void *value);
+extern MONOCULAR void *mncl_kv_find(MNCL_KV *kv, const char *key);
+extern MONOCULAR void mncl_kv_delete(MNCL_KV *kv, const char *key);
+
+extern MONOCULAR void mncl_kv_foreach(MNCL_KV *kv, MNCL_KV_VALUE_FN fn, void *user);
+
 /* Framebuffer component */
 
 extern MONOCULAR int mncl_config_video (int width, int height, int fullscreen, int flags);
