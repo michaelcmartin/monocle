@@ -1,6 +1,8 @@
 #ifndef MONOCLE_H_
 #define MONOCLE_H_
 
+#include <stdlib.h>
+
 #ifndef MONOCULAR
 #ifdef MONOCLE_EXPORTS
 #ifdef _WIN32
@@ -74,6 +76,33 @@ extern MONOCULAR void *mncl_kv_find(MNCL_KV *kv, const char *key);
 extern MONOCULAR void mncl_kv_delete(MNCL_KV *kv, const char *key);
 
 extern MONOCULAR void mncl_kv_foreach(MNCL_KV *kv, MNCL_KV_VALUE_FN fn, void *user);
+
+/* Semi-structured data component */
+
+typedef enum {
+    MNCL_DATA_NULL,
+    MNCL_DATA_BOOLEAN,
+    MNCL_DATA_NUMBER,
+    MNCL_DATA_STRING,
+    MNCL_DATA_ARRAY,
+    MNCL_DATA_OBJECT
+} MNCL_DATA_TYPE;
+
+typedef struct mncl_data_value_ {
+    MNCL_DATA_TYPE tag;
+    union {
+        int boolean;
+        double number;
+        char *string;
+        struct { int size; struct mncl_data_value_ **data; } array;
+        MNCL_KV *object;
+    } value;
+} MNCL_DATA;
+
+extern MONOCULAR MNCL_DATA *mncl_parse_data(const char *data, size_t size);
+extern MONOCULAR const char *mncl_data_error();
+extern MONOCULAR MNCL_DATA *mncl_data_lookup(MNCL_DATA *map, const char *key);
+extern MONOCULAR void mncl_free_data (MNCL_DATA *mncl_data);
 
 /* Framebuffer component */
 

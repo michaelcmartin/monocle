@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
-#include "json.h"
+#include "monocle.h"
 
 /* JSON Parse context. */
 typedef struct {
@@ -11,46 +11,46 @@ typedef struct {
     size_t size;   /* The length of s */
     int i;         /* The parser's "cursor" location, as an offset */
     int line, col; /* The parser's "cursor" location, in the file */
-} JSON_PARSE_CTX;
+} MNCL_DATA_PARSE_CTX;
 
 /* Strings and arrays need an extra dummy field to store the extra data. */
 
 typedef struct {
-    JSON_VALUE core;
+    MNCL_DATA core;
     char str[0];
-} JSON_STRING_VALUE;
+} MNCL_DATA_STRING_VALUE;
 
 typedef struct {
-    JSON_VALUE core;
-    JSON_VALUE *array[0];
-} JSON_ARRAY_VALUE;
+    MNCL_DATA core;
+    MNCL_DATA *array[0];
+} MNCL_DATA_ARRAY_VALUE;
 
 static char error_str[512] = "";
-JSON_VALUE json_dummy;
-JSON_VALUE *json_ok = &json_dummy;
+MNCL_DATA mncl_data_dummy;
+MNCL_DATA *mncl_data_ok = &mncl_data_dummy;
 
 const char *
-json_error()
+mncl_data_error()
 {
     return error_str;
 }
 
 void
-json_free (JSON_VALUE *json)
+mncl_free_data (MNCL_DATA *json)
 {
     int i;
     if (!json) {
         return;
     }
     switch (json->tag) {
-    case JSON_ARRAY:
+    case MNCL_DATA_ARRAY:
         for (i = 0; i < json->value.array.size; ++i) {
             if (json->value.array.data[i]) {
-                json_free(json->value.array.data[i]);
+                mncl_free_data(json->value.array.data[i]);
             }
         }
         break;
-    case JSON_OBJECT:
+    case MNCL_DATA_OBJECT:
         mncl_free_kv(json->value.object);
         break;
     default:
@@ -63,7 +63,7 @@ json_free (JSON_VALUE *json)
 /* We have this return an int because the ctype functions take ints
  * and that can get ugly. */
 static int
-peekch (JSON_PARSE_CTX *ctx)
+peekch (MNCL_DATA_PARSE_CTX *ctx)
 {
     if (ctx->i >= ctx->size) {
         return '\0';
@@ -72,7 +72,7 @@ peekch (JSON_PARSE_CTX *ctx)
 }
 
 static int
-readch (JSON_PARSE_CTX *ctx)
+readch (MNCL_DATA_PARSE_CTX *ctx)
 {
     int c = peekch(ctx);
     if (c) {
@@ -88,7 +88,7 @@ readch (JSON_PARSE_CTX *ctx)
 
 /* Skip whitespace */
 static void
-space (JSON_PARSE_CTX *ctx)
+space (MNCL_DATA_PARSE_CTX *ctx)
 {
     while (1) {
         int c = peekch(ctx);
@@ -99,58 +99,58 @@ space (JSON_PARSE_CTX *ctx)
     }
 }
 
-static JSON_VALUE *
-word(JSON_PARSE_CTX *ctx, int scan)
+static MNCL_DATA *
+word(MNCL_DATA_PARSE_CTX *ctx, int scan)
 {
     const char *s = ctx->s + ctx->i;
     if (*s == 'n' && ctx->i + 4 <= ctx->size && !strncmp(s, "null", 4)) {
         int i;
-        JSON_VALUE *result;
+        MNCL_DATA *result;
         for (i = 0; i < 4; ++i) {
             readch(ctx);
         }
         if (scan) {
-            return json_ok;
+            return mncl_data_ok;
         }
-        result = (JSON_VALUE *)malloc(sizeof(JSON_VALUE));
+        result = (MNCL_DATA *)malloc(sizeof(MNCL_DATA));
         if (!result) {
             snprintf(error_str, 512, "%d:%d: Out of memory", ctx->line, ctx->col);
             return NULL;
         }
-        result->tag = JSON_NULL;
+        result->tag = MNCL_DATA_NULL;
         return result;
     } else if (*s == 't' && ctx->i + 4 <= ctx->size && !strncmp(s, "true", 4)) {
         int i;
-        JSON_VALUE *result;
+        MNCL_DATA *result;
         for (i = 0; i < 4; ++i) {
             readch(ctx);
         }
         if (scan) {
-            return json_ok;
+            return mncl_data_ok;
         }
-        result = (JSON_VALUE *)malloc(sizeof(JSON_VALUE));
+        result = (MNCL_DATA *)malloc(sizeof(MNCL_DATA));
         if (!result) {
             snprintf(error_str, 512, "%d:%d: Out of memory", ctx->line, ctx->col);
             return NULL;
         }
-        result->tag = JSON_BOOLEAN;
+        result->tag = MNCL_DATA_BOOLEAN;
         result->value.boolean = 1;
         return result;
     } else if (*s == 'f' && ctx->i + 5 <= ctx->size && !strncmp(s, "false", 5)) {
         int i;
-        JSON_VALUE *result;
+        MNCL_DATA *result;
         for (i = 0; i < 5; ++i) {
             readch(ctx);
         }
         if (scan) {
-            return json_ok;
+            return mncl_data_ok;
         }
-        result = (JSON_VALUE *)malloc(sizeof(JSON_VALUE));
+        result = (MNCL_DATA *)malloc(sizeof(MNCL_DATA));
         if (!result) {
             snprintf(error_str, 512, "%d:%d: Out of memory", ctx->line, ctx->col);
             return NULL;
         }
-        result->tag = JSON_BOOLEAN;
+        result->tag = MNCL_DATA_BOOLEAN;
         result->value.boolean = 0;
         return result;
     }
@@ -158,12 +158,12 @@ word(JSON_PARSE_CTX *ctx, int scan)
     return NULL;
 }
 
-static JSON_VALUE *
-number(JSON_PARSE_CTX *ctx, int scan)
+static MNCL_DATA *
+number(MNCL_DATA_PARSE_CTX *ctx, int scan)
 {
     const char *s = ctx->s + ctx->i;
     int ch;
-    JSON_VALUE *result;
+    MNCL_DATA *result;
     if (peekch(ctx) == '-') {
         readch(ctx);
     }
@@ -214,20 +214,20 @@ number(JSON_PARSE_CTX *ctx, int scan)
         }
     }
     if (scan) {
-        return json_ok;
+        return mncl_data_ok;
     }
-    result = (JSON_VALUE *)malloc(sizeof(JSON_VALUE));
+    result = (MNCL_DATA *)malloc(sizeof(MNCL_DATA));
     if (!result) {
         snprintf(error_str, 512, "%d:%d: Out of memory", ctx->line, ctx->col);
         return NULL;
     }
-    result->tag = JSON_NUMBER;
+    result->tag = MNCL_DATA_NUMBER;
     result->value.number = strtod(s, NULL);
     return result;
 }
 
 static int
-hex_decode(JSON_PARSE_CTX *ctx)
+hex_decode(MNCL_DATA_PARSE_CTX *ctx)
 {
     int i, result = 0;
     for (i = 0; i < 4; ++i) {
@@ -249,10 +249,10 @@ hex_decode(JSON_PARSE_CTX *ctx)
 }
 
 static int
-json_str_size(JSON_PARSE_CTX *ctx_orig, int scan)
+mncl_data_str_size(MNCL_DATA_PARSE_CTX *ctx_orig, int scan)
 {
     /* We don't want to alter the context here, so we make a copy */
-    JSON_PARSE_CTX ctx = *ctx_orig;
+    MNCL_DATA_PARSE_CTX ctx = *ctx_orig;
     int c = readch(&ctx);
     int result = 0;
 
@@ -321,10 +321,10 @@ json_str_size(JSON_PARSE_CTX *ctx_orig, int scan)
 }
 
 /* The buffer dst must have been pre-sized by a call to
- * json_str_size. This function returns 0 on failure, >= 0 on
+ * mncl_data_str_size. This function returns 0 on failure, >= 0 on
  * success. */
 static int
-json_strcpy(char *dst, JSON_PARSE_CTX *ctx) {
+mncl_data_strcpy(char *dst, MNCL_DATA_PARSE_CTX *ctx) {
     int c = readch(ctx); /* Skip the leading quote */
     while(1) {
         c = readch(ctx);
@@ -381,41 +381,41 @@ json_strcpy(char *dst, JSON_PARSE_CTX *ctx) {
     return 1;
 }
 
-static JSON_VALUE *
-string(JSON_PARSE_CTX *ctx, int scan)
+static MNCL_DATA *
+string(MNCL_DATA_PARSE_CTX *ctx, int scan)
 {
-    JSON_STRING_VALUE *result;
-    int sz = json_str_size(ctx, scan);
+    MNCL_DATA_STRING_VALUE *result;
+    int sz = mncl_data_str_size(ctx, scan);
     if (sz < 0) {
         return NULL;
     }
     if (scan) {
-        return json_ok;
+        return mncl_data_ok;
     }
-    result = malloc(sizeof(JSON_STRING_VALUE) + sz + 1);
+    result = malloc(sizeof(MNCL_DATA_STRING_VALUE) + sz + 1);
     if (!result) {
         snprintf(error_str, 512, "%d:%d: Out of memory", ctx->line, ctx->col);
         return NULL;
     }
     result->str[sz] = '\0';
-    if (json_strcpy(result->str, ctx)) {
-        result->core.tag = JSON_STRING;
+    if (mncl_data_strcpy(result->str, ctx)) {
+        result->core.tag = MNCL_DATA_STRING;
         result->core.value.string = result->str;
-        return (JSON_VALUE *)result;
+        return (MNCL_DATA *)result;
     }
     free (result);
     return NULL;
 }
 
 /* Array and Object need this forward decl */
-static JSON_VALUE *value(JSON_PARSE_CTX *ctx, int scan);
+static MNCL_DATA *value(MNCL_DATA_PARSE_CTX *ctx, int scan);
 
-static JSON_VALUE *
-array(JSON_PARSE_CTX *ctx, int scan)
+static MNCL_DATA *
+array(MNCL_DATA_PARSE_CTX *ctx, int scan)
 {
-    JSON_ARRAY_VALUE *result = NULL;
+    MNCL_DATA_ARRAY_VALUE *result = NULL;
     int i, count = 0;
-    JSON_PARSE_CTX start = *ctx;
+    MNCL_DATA_PARSE_CTX start = *ctx;
     int ch = readch(ctx);
     if (ch != '[') {
         snprintf(error_str, 512, "%d:%d: Expected '['", ctx->line, ctx->col);
@@ -447,9 +447,9 @@ array(JSON_PARSE_CTX *ctx, int scan)
         ++count;
     }
     if (scan) {
-        return json_ok;
+        return mncl_data_ok;
     }
-    result = malloc(sizeof(JSON_ARRAY_VALUE) + (sizeof (JSON_VALUE *) * count));
+    result = malloc(sizeof(MNCL_DATA_ARRAY_VALUE) + (sizeof (MNCL_DATA *) * count));
     if (!result) {
         snprintf(error_str, 512, "%d:%d: Out of memory", ctx->line, ctx->col);
         return NULL;
@@ -458,7 +458,7 @@ array(JSON_PARSE_CTX *ctx, int scan)
      * split like when parsing strings. */
     *ctx = start;
     readch(ctx); /* Consume the '[' */
-    result->core.tag = JSON_ARRAY;
+    result->core.tag = MNCL_DATA_ARRAY;
     result->core.value.array.size = count;
     result->core.value.array.data = result->array;
     for (i = 0; i < count; ++i) {
@@ -490,37 +490,37 @@ array(JSON_PARSE_CTX *ctx, int scan)
             /* This should really only happen if we run out of memory
              * partway through; any malformed JSON objects should be
              * caught by the sizing scan above. */
-            json_free((JSON_VALUE *)result);
+            mncl_free_data((MNCL_DATA *)result);
             return NULL;
         }
         ++i;
     }
-    return (JSON_VALUE *)result;
+    return (MNCL_DATA *)result;
 }
 
-static JSON_VALUE *
-object(JSON_PARSE_CTX *ctx, int scan)
+static MNCL_DATA *
+object(MNCL_DATA_PARSE_CTX *ctx, int scan)
 {
-    JSON_VALUE *result = json_ok;
+    MNCL_DATA *result = mncl_data_ok;
     int first = 1, ch = readch(ctx);
     if (ch != '{') {
         snprintf(error_str, 512, "%d:%d: Out of memory", ctx->line, ctx->col);
         return NULL;
     }
     if (!scan) {
-        result = (JSON_VALUE *)malloc(sizeof(JSON_VALUE));
+        result = (MNCL_DATA *)malloc(sizeof(MNCL_DATA));
         if (!result) {
             snprintf(error_str, 512, "%d:%d: Out of memory", ctx->line, ctx->col);
             return NULL;
         }
-        result->tag = JSON_OBJECT;
-        result->value.object = mncl_alloc_kv((MNCL_KV_DELETER)json_free);
+        result->tag = MNCL_DATA_OBJECT;
+        result->value.object = mncl_alloc_kv((MNCL_KV_DELETER)mncl_free_data);
     }
 
     while (1) {
         int keysize;
         char *curkey = NULL;
-        JSON_VALUE *val;
+        MNCL_DATA *val;
 
         space(ctx);
         ch = peekch(ctx);
@@ -533,7 +533,7 @@ object(JSON_PARSE_CTX *ctx, int scan)
         } else {
             if (ch != ',') {
                 if (!scan) {
-                    json_free(result);
+                    mncl_free_data(result);
                 }
                 snprintf(error_str, 512, "%d:%d: Expected ':'", ctx->line, ctx->col);
                 return NULL;
@@ -541,28 +541,28 @@ object(JSON_PARSE_CTX *ctx, int scan)
             readch(ctx);
             space(ctx);
         }
-        keysize = json_str_size(ctx, scan);
+        keysize = mncl_data_str_size(ctx, scan);
         if (keysize < 0) {
             if (!scan) {
-                json_free(result);
+                mncl_free_data(result);
             }
             return NULL;
         }
         if (!scan) {
             curkey = malloc(keysize + 1);
             if (!curkey) {
-                json_free(result);
+                mncl_free_data(result);
                 snprintf(error_str, 512, "%d:%d: Out of memory", ctx->line, ctx->col);
                 return NULL;
             }
-            json_strcpy(curkey, ctx);
+            mncl_data_strcpy(curkey, ctx);
         }
         space(ctx);
         ch = readch(ctx);
         if (ch != ':') {
             if (!scan) {
                 free(curkey);
-                json_free(result);
+                mncl_free_data(result);
             }
             snprintf(error_str, 512, "%d:%d: Expected ':'", ctx->line, ctx->col);
             return NULL;
@@ -571,7 +571,7 @@ object(JSON_PARSE_CTX *ctx, int scan)
         if (!val) {
             if (!scan) {
                 free(curkey);
-                json_free(result);
+                mncl_free_data(result);
             }
             return NULL;
         }
@@ -583,11 +583,11 @@ object(JSON_PARSE_CTX *ctx, int scan)
     return result;
 }
 
-static JSON_VALUE *
-value(JSON_PARSE_CTX *ctx, int scan)
+static MNCL_DATA *
+value(MNCL_DATA_PARSE_CTX *ctx, int scan)
 {
     int ch;
-    JSON_VALUE *result = NULL;
+    MNCL_DATA *result = NULL;
     space(ctx);
     ch = peekch(ctx);
     switch (ch) {
@@ -614,11 +614,11 @@ value(JSON_PARSE_CTX *ctx, int scan)
     return result;
 }
 
-JSON_VALUE *
-json_parse(const char *data, size_t size)
+MNCL_DATA *
+mncl_parse_data(const char *data, size_t size)
 {
-    JSON_PARSE_CTX ctx;
-    JSON_VALUE *result;
+    MNCL_DATA_PARSE_CTX ctx;
+    MNCL_DATA *result;
     ctx.s = data;
     ctx.size = size;
     ctx.i = 0;
@@ -627,7 +627,7 @@ json_parse(const char *data, size_t size)
     result = value(&ctx, 0);
     if (result && peekch(&ctx)) {
         /* This seems mean-spirited */
-        json_free(result);
+        mncl_free_data(result);
         snprintf(error_str, 512, "%d:%d: Extra garbage after value", ctx.line, ctx.col);
         return NULL;
     }
@@ -635,10 +635,10 @@ json_parse(const char *data, size_t size)
     return result;
 }
 
-JSON_VALUE *
-json_lookup(JSON_VALUE *map, const char *key)
+MNCL_DATA *
+mncl_data_lookup(MNCL_DATA *map, const char *key)
 {
-    if (!map || map->tag != JSON_OBJECT) {
+    if (!map || map->tag != MNCL_DATA_OBJECT) {
         return NULL;
     }
     return mncl_kv_find(map->value.object, key);

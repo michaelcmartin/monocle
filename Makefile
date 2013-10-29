@@ -43,8 +43,8 @@ $(OBJS): %.o: %.c
 src/audio.o: include/monocle.h
 src/event.o: include/monocle.h
 src/framebuffer.o: include/monocle.h src/monocle_internal.h
-src/json.o: src/json.h include/monocle.h
+src/json.o: include/monocle.h
 src/meta.o: include/monocle.h src/monocle_internal.h
 src/raw_data.o: include/monocle.h src/tree.h
-src/resource.o: include/monocle.h src/tree.h src/json.h
+src/resource.o: include/monocle.h src/tree.h
 src/tree.o: src/tree.h include/monocle.h

@@ -2,9 +2,8 @@
 #include <string.h>
 #include "monocle.h"
 #include "tree.h"
-#include "json.h"
 
-typedef void *(*ALLOC_FN)(JSON_VALUE *);
+typedef void *(*ALLOC_FN)(MNCL_DATA *);
 
 typedef struct res_class {
     MNCL_KV values;
@@ -13,85 +12,85 @@ typedef struct res_class {
 } RES_CLASS;
 
 static void *
-raw_alloc(JSON_VALUE *arg) 
+raw_alloc(MNCL_DATA *arg)
 {
-    if (!arg || arg->tag != JSON_STRING) {
+    if (!arg || arg->tag != MNCL_DATA_STRING) {
         return NULL;
     }
     return mncl_acquire_raw(arg->value.string);
 }
 
 static void *
-spritesheet_alloc(JSON_VALUE *arg)
+spritesheet_alloc(MNCL_DATA *arg)
 {
-    if (arg && arg->tag == JSON_STRING) {
+    if (arg && arg->tag == MNCL_DATA_STRING) {
         return mncl_alloc_spritesheet(arg->value.string);
     }
     return NULL;
 }
 
 static void *
-sprite_alloc(JSON_VALUE *arg)
+sprite_alloc(MNCL_DATA *arg)
 {
-    if (arg && arg->tag == JSON_OBJECT) {
-        JSON_VALUE *json_w = json_lookup(arg, "width");
-        JSON_VALUE *json_h = json_lookup(arg, "height");
-        JSON_VALUE *json_fr = json_lookup(arg, "frames");
-        JSON_VALUE *hot_x = json_lookup(arg, "hotspot-x");
-        JSON_VALUE *hot_y = json_lookup(arg, "hotspot-y");
-        JSON_VALUE *hit_x = json_lookup(arg, "hitbox-x");
-        JSON_VALUE *hit_y = json_lookup(arg, "hitbox-y");
-        JSON_VALUE *hit_w = json_lookup(arg, "hitbox-width");
-        JSON_VALUE *hit_h = json_lookup(arg, "hitbox-height");
-                
+    if (arg && arg->tag == MNCL_DATA_OBJECT) {
+        MNCL_DATA *mncl_data_w = mncl_data_lookup(arg, "width");
+        MNCL_DATA *mncl_data_h = mncl_data_lookup(arg, "height");
+        MNCL_DATA *mncl_data_fr = mncl_data_lookup(arg, "frames");
+        MNCL_DATA *hot_x = mncl_data_lookup(arg, "hotspot-x");
+        MNCL_DATA *hot_y = mncl_data_lookup(arg, "hotspot-y");
+        MNCL_DATA *hit_x = mncl_data_lookup(arg, "hitbox-x");
+        MNCL_DATA *hit_y = mncl_data_lookup(arg, "hitbox-y");
+        MNCL_DATA *hit_w = mncl_data_lookup(arg, "hitbox-width");
+        MNCL_DATA *hit_h = mncl_data_lookup(arg, "hitbox-height");
+
         MNCL_SPRITE *result = NULL;
         int i;
-        if (!(json_w && json_h && json_fr)) {
+        if (!(mncl_data_w && mncl_data_h && mncl_data_fr)) {
             return NULL;
         }
-        if (json_w->tag != JSON_NUMBER || json_h->tag != JSON_NUMBER) {
+        if (mncl_data_w->tag != MNCL_DATA_NUMBER || mncl_data_h->tag != MNCL_DATA_NUMBER) {
             return NULL;
         }
-        if (json_fr->tag != JSON_ARRAY) {
+        if (mncl_data_fr->tag != MNCL_DATA_ARRAY) {
             return NULL;
         }
-        result = mncl_alloc_sprite(json_fr->value.array.size);
+        result = mncl_alloc_sprite(mncl_data_fr->value.array.size);
         if (!result) {
             return NULL;
         }
-        result->w = (int)json_w->value.number;
-        result->h = (int)json_h->value.number;
+        result->w = (int)mncl_data_w->value.number;
+        result->h = (int)mncl_data_h->value.number;
         /* Some sensible defaults for optional values */
         result->hot_x = result->hot_y = 0;
         result->hit_x = result->hit_y = 0;
         result->hit_w = result->w;
         result->hit_h = result->h;
         /* Then override those if they were in the object */
-        if (hot_x && hot_x->tag == JSON_NUMBER) {
+        if (hot_x && hot_x->tag == MNCL_DATA_NUMBER) {
             result->hot_x = (int)hot_x->value.number;
         }
-        if (hot_y && hot_y->tag == JSON_NUMBER) {
+        if (hot_y && hot_y->tag == MNCL_DATA_NUMBER) {
             result->hot_y = (int)hot_y->value.number;
         }
-        if (hit_x && hit_x->tag == JSON_NUMBER) {
+        if (hit_x && hit_x->tag == MNCL_DATA_NUMBER) {
             result->hit_x = (int)hit_x->value.number;
         }
-        if (hit_y && hit_y->tag == JSON_NUMBER) {
+        if (hit_y && hit_y->tag == MNCL_DATA_NUMBER) {
             result->hit_y = (int)hit_y->value.number;
         }
-        if (hit_w && hit_w->tag == JSON_NUMBER) {
+        if (hit_w && hit_w->tag == MNCL_DATA_NUMBER) {
             result->hit_w = (int)hit_w->value.number;
         }
-        if (hit_h && hit_h->tag == JSON_NUMBER) {
+        if (hit_h && hit_h->tag == MNCL_DATA_NUMBER) {
             result->hit_h = (int)hit_h->value.number;
         }
         for (i = 0; i < result->nframes; ++i) {
-            JSON_VALUE *json_f = json_fr->value.array.data[i];
-            if (json_f && json_f->tag == JSON_OBJECT) {
-                JSON_VALUE *x = json_lookup(json_f, "x");
-                JSON_VALUE *y = json_lookup(json_f, "y");
-                JSON_VALUE *ss = json_lookup(json_f, "spritesheet");
-                if (x && y && ss && x->tag == JSON_NUMBER && y->tag == JSON_NUMBER && ss->tag == JSON_STRING) {
+            MNCL_DATA *mncl_data_f = mncl_data_fr->value.array.data[i];
+            if (mncl_data_f && mncl_data_f->tag == MNCL_DATA_OBJECT) {
+                MNCL_DATA *x = mncl_data_lookup(mncl_data_f, "x");
+                MNCL_DATA *y = mncl_data_lookup(mncl_data_f, "y");
+                MNCL_DATA *ss = mncl_data_lookup(mncl_data_f, "spritesheet");
+                if (x && y && ss && x->tag == MNCL_DATA_NUMBER && y->tag == MNCL_DATA_NUMBER && ss->tag == MNCL_DATA_STRING) {
                     MNCL_SPRITESHEET *ss_val = mncl_spritesheet_resource(ss->value.string);
                     if (ss_val) {
                         result->frames[i].sheet = ss_val;
@@ -112,18 +111,18 @@ sprite_alloc(JSON_VALUE *arg)
 }
 
 static void *
-sfx_alloc(JSON_VALUE *arg)
+sfx_alloc(MNCL_DATA *arg)
 {
-    if (arg && arg->tag == JSON_STRING) {
+    if (arg && arg->tag == MNCL_DATA_STRING) {
         return mncl_alloc_sfx(arg->value.string);
     }
     return NULL;
 }
 
 static void *
-music_alloc(JSON_VALUE *arg) 
+music_alloc(MNCL_DATA *arg)
 {
-    if (arg && arg->tag == JSON_STRING) {
+    if (arg && arg->tag == MNCL_DATA_STRING) {
         int size = strlen(arg->value.string) + 1;
         char *result = malloc(size);
         strncpy(result, arg->value.string, size);
@@ -144,7 +143,7 @@ static void
 alloc_resource_type(const char *key, void *value, void *user)
 {
     RES_CLASS *rc = (RES_CLASS *)user;
-    void *val = rc->alloc_fn((JSON_VALUE *)value);
+    void *val = rc->alloc_fn((MNCL_DATA *)value);
     if (val) {
         void *old_val = mncl_kv_find(&rc->values, key);
         if (old_val) {
@@ -167,21 +166,22 @@ free_resource_type (const char *key, void *value, void *user)
 void
 mncl_load_resmap(const char *path)
 {
-    JSON_VALUE *resmap = NULL;
+    MNCL_DATA *resmap = NULL;
     MNCL_RAW *resmap_file = mncl_acquire_raw(path);
     if (!resmap_file) {
         return;
     }
-    resmap = json_parse((char *)resmap_file->data, resmap_file->size);
+    resmap = mncl_parse_data((char *)resmap_file->data, resmap_file->size);
     mncl_release_raw(resmap_file);
     if (resmap) {
         int i;
         for (i = 0; resclasses[i]; ++i) {
-            JSON_VALUE *top = json_lookup(resmap, resclasses[i]->type);
-            if (top && top->tag == JSON_OBJECT) {
+            MNCL_DATA *top = mncl_data_lookup(resmap, resclasses[i]->type);
+            if (top && top->tag == MNCL_DATA_OBJECT) {
                 mncl_kv_foreach(top->value.object, alloc_resource_type, resclasses[i]);
             }
         }
+        mncl_free_data(resmap);
     }
 }
 
@@ -190,21 +190,22 @@ mncl_load_resmap(const char *path)
 void
 mncl_unload_resmap(const char *path)
 {
-    JSON_VALUE *resmap = NULL;
+    MNCL_DATA *resmap = NULL;
     MNCL_RAW *resmap_file = mncl_acquire_raw(path);
     if (!resmap_file) {
         return;
     }
-    resmap = json_parse((char *)resmap_file->data, resmap_file->size);
+    resmap = mncl_parse_data((char *)resmap_file->data, resmap_file->size);
     mncl_release_raw(resmap_file);
     if (resmap) {
         int i;
         for (i = 0; resclasses[i]; ++i) {
-            JSON_VALUE *top = json_lookup(resmap, resclasses[i]->type);
-            if (top && top->tag == JSON_OBJECT) {
+            MNCL_DATA *top = mncl_data_lookup(resmap, resclasses[i]->type);
+            if (top && top->tag == MNCL_DATA_OBJECT) {
                 mncl_kv_foreach(top->value.object, free_resource_type, resclasses[i]);
             }
         }
+        mncl_free_data(resmap);
     }
 }
 
