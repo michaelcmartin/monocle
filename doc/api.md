@@ -226,6 +226,50 @@ These are the event loop accessor functions. The pointer returned by `mncl_pop_g
 
 Clients written in C and C++ will probably just access the MNCL_EVENT structure directly instead of using the accessor functions.
 
+## Key-Value Map Component ##
+
+C rather infamously doesn't provide a whole lot of structured data types. A lot of the Monocle system needs to have string-to-object map capability under the hood, so it makes sense to expose it to other C clients.
+
+### Data Structures ###
+
+```C
+struct MNCL_KV;
+```
+
+As is typical for Monocle, the core type is opaque. Client code will just use pointers.
+
+```C
+typedef void (*MNCL_KV_DELETER)(void *value);
+typedef void (*MNCL_KV_VALUE_FN)(const char *key, void *value, void *user);
+```
+
+The key-value API uses a lot of callbacks. The deleter is a function that's roughly equivalent to `free()`, and it is used to clean up any values that go out of scope due to being replaced or deleted. (The `MNCL_KV` maps "own" their values unless you define a deleter that doesn't do anything.) Every element that goes into a `MNCL_KV` uses the same deleter.
+
+A `MNCL_KV_VALUE_FN` is used when iterating over a map. Its semantics are defined with `mncl_kv_foreach`, below.
+
+### Functions ###
+
+```C
+MNCL_KV *mncl_alloc_kv(MNCL_KV_DELETER deleter);
+void mncl_free_kv(MNCL_KV *kv);
+```
+
+A `MNCL_KV` map "owns" its values; when you replace or delete a value, a deletion function specified by you is called with the value being replaced or deleted as its argument. (These deleters have the same general signature as `free()`.) Every element that goes into a `MNCL_KV` uses the same deleter.
+
+```C
+int mncl_kv_insert(MNCL_KV *kv, const char *key, void *value);
+void *mncl_kv_find(MNCL_KV *kv, const char *key);
+void mncl_kv_delete(MNCL_KV *kv, const char *key);
+```
+
+Insert, lookup, and delete are all pretty straightforward.
+
+```C
+void mncl_kv_foreach(MNCL_KV *kv, MNCL_KV_VALUE_FN fn, void *user);
+```
+
+This allows for directed iteration. For every (key, value) pair in `kv`, `mncl_kv_foreach` will call `fn(key, value, user)`. The `user` parameter is passed unmodified; think of it as a `this` pointer, or as the enclosing context of `fn`, depending on which other languages you are familiar with.
+
 # Layer 1 #
 
 Layer 1 lets us load and output more interesting things. These use the raw data component from level 0 internally. *However, unlike the raw data blocks, layer 1 objects are not reference-counted and interned. Each time you allocate one of these objects some allocation ends up occurring.* Reference-counting and interning of these resources happens in the resource management component, which is one level up.
@@ -317,6 +361,58 @@ void mncl_play_sfx(MNCL_SFX *sfx, int volume);
 ```
 
 Volumes again range from 0 to 128.
+
+## Semi-structured Data Component ##
+
+Monocle uses JSON internally to represent semistructured data such as resource assignments. This functionality is also offered to clients to allow for resource files to include project-specific data.
+
+### Data Structures ###
+
+```C
+typedef enum {
+    MNCL_DATA_NULL,
+    MNCL_DATA_BOOLEAN,
+    MNCL_DATA_NUMBER,
+    MNCL_DATA_STRING,
+    MNCL_DATA_ARRAY,
+    MNCL_DATA_OBJECT
+} MNCL_DATA_TYPE;
+
+typedef struct mncl_data_value_ {
+    MNCL_DATA_TYPE tag;
+    union {
+        int boolean;
+        double number;
+        char *string;
+        struct { int size; struct mncl_data_value_ **data; } array;
+        MNCL_KV *object;
+    } value;
+} MNCL_DATA;
+```
+
+The `MNCL_DATA` tagged union is the core structure here; the enumeration is really there so you can determine what kind of data it is. Individual `MNCL_DATA` objects are relatively self-contained and will normally not alias other operations.
+
+### Functions ###
+
+```C
+MNCL_DATA *mncl_parse_data(const char *data, size_t size);
+MNCL_DATA *mncl_data_clone (MNCL_DATA *src);
+void mncl_free_data (MNCL_DATA *mncl_data);
+```
+
+These three functions create a `MNCL_DATA` from JSON text, deep copy some other `MNCL_DATA`, or free all memory associated with a `MNCL_DATA`, respectively. One should not free a data item that is part of some other data item (an array or object).
+
+```C
+const char *mncl_data_error();
+```
+
+If `mncl_parse_data` failed, it will return `NULL` and a call to this function will give some explanation as to why.
+
+```C
+MNCL_DATA *mncl_data_lookup(MNCL_DATA *map, const char *key);
+```
+
+It's kind of tedious to pick apart the union and use the `mncl_kv_*` functions to get at fields of an object, so this provides a convenient shorthand for that.
 
 # Layer 2 #
 
