@@ -131,13 +131,20 @@ music_alloc(MNCL_DATA *arg)
     return NULL;
 }
 
+static void *
+data_alloc(MNCL_DATA *arg)
+{
+    return mncl_data_clone(arg);
+}
+
 static RES_CLASS raw = { { { NULL }, (MNCL_KV_DELETER)mncl_release_raw }, "raw", raw_alloc };
 static RES_CLASS spritesheet = { { { NULL }, (MNCL_KV_DELETER)mncl_free_spritesheet }, "spritesheet", spritesheet_alloc };
 static RES_CLASS sprite = { { { NULL }, (MNCL_KV_DELETER)mncl_free_sprite },  "sprite", sprite_alloc };
 static RES_CLASS sfx = { { { NULL }, (MNCL_KV_DELETER)mncl_free_sfx }, "sfx", sfx_alloc };
 static RES_CLASS music = { { { NULL }, free }, "music", music_alloc };
+static RES_CLASS data = { { { NULL }, (MNCL_KV_DELETER)mncl_free_data }, "data", data_alloc };
 
-static RES_CLASS *resclasses[] = { &raw, &spritesheet, &sprite, &sfx, &music, NULL };
+static RES_CLASS *resclasses[] = { &raw, &spritesheet, &sprite, &sfx, &music, &data, NULL };
 
 static void
 alloc_resource_type(const char *key, void *value, void *user)
@@ -254,6 +261,12 @@ MNCL_SFX *
 mncl_sfx_resource(const char *resource)
 {
     return (MNCL_SFX *)mncl_kv_find(&sfx.values, resource);
+}
+
+MNCL_DATA *
+mncl_data_resource(const char *resource)
+{
+    return (MNCL_DATA *)mncl_kv_find(&data.values, resource);
 }
 
 void

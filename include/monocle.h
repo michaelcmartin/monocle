@@ -230,6 +230,7 @@ extern MONOCULAR MNCL_RAW *mncl_raw_resource(const char *resource);
 extern MONOCULAR MNCL_SPRITESHEET *mncl_spritesheet_resource(const char *resource);
 extern MONOCULAR MNCL_SPRITE *mncl_sprite_resource(const char *resource);
 extern MONOCULAR MNCL_SFX *mncl_sfx_resource(const char *resource);
+extern MONOCULAR MNCL_DATA *mncl_data_resource(const char *resource);
 extern MONOCULAR void mncl_play_music_resource(const char *resource, int fade_in_ms);
 
 #ifdef __cplusplus

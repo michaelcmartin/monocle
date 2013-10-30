@@ -12,15 +12,18 @@ MNCL_SPRITE *earth;
 void
 instructions(void)
 {
-    printf("Instructions:\n");
-    printf("    B to change background color\n");
-    printf("    P to pause/resume music\n");
-    printf("    T to toggle and test fullscreen\n");
-    printf("    SPACE to play loud sound effect\n");
-    printf("    LEFT SHIFT to play soft sound effect\n");
-    printf("    UP AND DOWN ARROW KEYS to change music volume\n");
-    printf("    ESCAPE to quit with music fadeout\n");
-    printf("    Close the window to quit immediately\n");
+    MNCL_DATA *insts;
+    insts = mncl_data_resource("instructions");
+    if (insts && insts->tag == MNCL_DATA_ARRAY) {
+        int i;
+        printf("Instructions:\n");
+        for (i = 0; i < insts->value.array.size; ++i) {
+            MNCL_DATA *val = insts->value.array.data[i];
+            printf ("    %s\n", (val && val->tag == MNCL_DATA_STRING) ? val->value.string : "(invalid datum)");
+        }
+    } else {
+        printf("No instructions available\n");
+    }
 }
 
 void

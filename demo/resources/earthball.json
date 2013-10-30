@@ -37,5 +37,15 @@
                               {"spritesheet": "earth", "x": 192, "y": 192},
                               {"spritesheet": "earth", "x": 256, "y": 192},
                               {"spritesheet": "earth", "x": 320, "y": 192}]}
-    }    
+    },
+    "data": {
+        "instructions": ["B to change background color",
+                         "P to pause/resume music",
+                         "T to toggle and test fullscreen",
+                         "SPACE to play loud sound effect",
+                         "LEFT SHIFT to play soft sound effect",
+                         "UP and DOWN ARROW KEYS to change music volume",
+                         "ESCAPE to quit with music fadeout",
+                         "CLOSE WINDOW to quit immediately"]
+    }
 }
