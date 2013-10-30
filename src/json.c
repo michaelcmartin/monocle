@@ -60,6 +60,63 @@ mncl_free_data (MNCL_DATA *json)
     free (json);
 }
 
+void
+mncl_data_clone_kv (const char *key, void *data, void *user)
+{
+    MNCL_KV *kv = (MNCL_KV *)user;
+    mncl_kv_insert (kv, key, mncl_data_clone((MNCL_DATA *)data));
+}
+
+MNCL_DATA *
+mncl_data_clone (MNCL_DATA *src)
+{
+    if (!src) {
+        return NULL;
+    }
+    switch (src->tag) {
+    case MNCL_DATA_NULL:
+    case MNCL_DATA_BOOLEAN:
+    case MNCL_DATA_NUMBER:
+    {
+        MNCL_DATA *dest = malloc(sizeof(MNCL_DATA));
+        dest->tag = src->tag;
+        dest->value = src->value;
+        return dest;
+    }
+    case MNCL_DATA_STRING:
+    {
+        MNCL_DATA_STRING_VALUE *dest = malloc(sizeof(MNCL_DATA_STRING_VALUE) + strlen(src->value.string) + 1);
+        dest->core.tag = src->tag;
+        dest->core.value.string = &dest->str[0];
+        strcpy(dest->core.value.string, src->value.string);
+        return (MNCL_DATA *)dest;
+    }
+    case MNCL_DATA_ARRAY:
+    {
+        int i;
+        MNCL_DATA_ARRAY_VALUE *dest = malloc(sizeof(MNCL_DATA_ARRAY_VALUE) + sizeof(MNCL_DATA *) * src->value.array.size);
+        dest->core.tag = src->tag;
+        dest->core.value.array.size = src->value.array.size;
+        dest->core.value.array.data = &dest->array[0];
+        for (i = 0; i < src->value.array.size; ++i) {
+            dest->array[i] = mncl_data_clone(src->value.array.data[i]);
+        }
+        return (MNCL_DATA *)dest;
+    }
+    case MNCL_DATA_OBJECT:
+    {
+        MNCL_DATA *dest = malloc(sizeof(MNCL_DATA));
+        dest->tag = src->tag;
+        dest->value.object = mncl_alloc_kv((MNCL_KV_DELETER)mncl_free_data);
+        mncl_kv_foreach(src->value.object, mncl_data_clone_kv, dest->value.object);
+        return dest;
+    }
+    default:
+        break;
+    }
+    return NULL;
+}
+
 /* We have this return an int because the ctype functions take ints
  * and that can get ugly. */
 static int

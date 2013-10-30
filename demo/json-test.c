@@ -76,7 +76,7 @@ test_size(const char *s, int expected) {
 
 int main (int argc, char **argv) {
     char *s;
-    MNCL_DATA *v;
+    MNCL_DATA *v, *d;
     s = calloc(65535, 1);
     if (argc > 1) {
         FILE *f = fopen(argv[1], "r");
@@ -93,11 +93,13 @@ int main (int argc, char **argv) {
         return 1;
     }
     v = mncl_parse_data(s, strlen(s));
-    mncl_data_dump(v); printf("\n");
+    d = mncl_data_clone(v);
+    mncl_free_data(v);
+    mncl_data_dump(d); printf("\n");
     if (argc > 2) {
         int i;
         for (i = 2; i < argc; ++i) {
-            MNCL_DATA *val = mncl_data_lookup(v, argv[i]);
+            MNCL_DATA *val = mncl_data_lookup(d, argv[i]);
             printf("%s: ", argv[i]);
             if (!val) {
                 printf("Not found");
@@ -107,7 +109,7 @@ int main (int argc, char **argv) {
             printf("\n");
         }
     }
-    mncl_free_data(v);
+    mncl_free_data(d);
     test_size("abc", -1);
     test_size("\"abc", -1);
     test_size("\"abc\"", 3);

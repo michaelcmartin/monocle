@@ -100,9 +100,11 @@ typedef struct mncl_data_value_ {
 } MNCL_DATA;
 
 extern MONOCULAR MNCL_DATA *mncl_parse_data(const char *data, size_t size);
+extern MONOCULAR MNCL_DATA *mncl_data_clone (MNCL_DATA *src);
+extern MONOCULAR void mncl_free_data (MNCL_DATA *mncl_data);
+
 extern MONOCULAR const char *mncl_data_error();
 extern MONOCULAR MNCL_DATA *mncl_data_lookup(MNCL_DATA *map, const char *key);
-extern MONOCULAR void mncl_free_data (MNCL_DATA *mncl_data);
 
 /* Framebuffer component */
 
