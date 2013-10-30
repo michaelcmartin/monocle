@@ -117,5 +117,6 @@ int main (int argc, char **argv) {
     test_size("\"\\abc\"", -1);
     test_size("\"a\\bc\"", 3);
     test_size("\"\\u4f60\\u597d\"", 6);
+    free(s);
     return 0;
 }

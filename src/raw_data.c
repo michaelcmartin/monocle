@@ -493,6 +493,8 @@ mncl_release_raw(MNCL_RAW *raw)
             if (found2->resource->data) {
                 free(found2->resource->data);
                 free(found2->resource);
+                free((void *)found2->resname);
+                free((void *)found->resname);
                 free(found);
                 free(found2);
             }
