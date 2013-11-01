@@ -262,7 +262,7 @@ zipfile_get_resource(const char *pathname, const char *resourcename)
             }
         }
         if (success) {
-            unsigned long crc = crc32(0L, Z_NULL, 0);
+            uint64_t crc = crc32(0L, Z_NULL, 0);
             crc = crc32(crc, (unsigned char*)outbuf, ze.uncompressedSize);
             crc &= 0xFFFFFFFF;
             if (ze.crc32 != crc) {
@@ -512,114 +512,114 @@ mncl_raw_size(MNCL_RAW *raw)
     return raw->size;
 }
 
-unsigned char
+uint8_t
 mncl_raw_u8(MNCL_RAW *raw, int offset)
 {
     return raw->data[offset];
 }
 
-unsigned short
+uint16_t
 mncl_raw_u16le(MNCL_RAW *raw, int offset)
 {
-    return ((unsigned short)raw->data[offset+1] << 8) | raw->data[offset];
+    return ((uint16_t)raw->data[offset+1] << 8) | raw->data[offset];
 }
 
-unsigned int 
+uint32_t
 mncl_raw_u32le(MNCL_RAW *raw, int offset)
 {
-    return ((unsigned int)raw->data[offset+3] << 24) | 
-           ((unsigned int)raw->data[offset+2] << 16) | 
-           ((unsigned int)raw->data[offset+1] << 8)  |
+    return ((uint32_t)raw->data[offset+3] << 24) |
+           ((uint32_t)raw->data[offset+2] << 16) |
+           ((uint32_t)raw->data[offset+1] << 8)  |
            raw->data[offset];
 }
 
-unsigned long
+uint64_t
 mncl_raw_u64le(MNCL_RAW *raw, int offset)
 {
-    return ((unsigned long)raw->data[offset+7] << 56) | 
-           ((unsigned long)raw->data[offset+6] << 48) | 
-           ((unsigned long)raw->data[offset+5] << 40) | 
-           ((unsigned long)raw->data[offset+4] << 32) | 
-           ((unsigned long)raw->data[offset+3] << 24) | 
-           ((unsigned long)raw->data[offset+2] << 16) | 
-           ((unsigned long)raw->data[offset+1] << 8)  |
+    return ((uint64_t)raw->data[offset+7] << 56) |
+           ((uint64_t)raw->data[offset+6] << 48) |
+           ((uint64_t)raw->data[offset+5] << 40) |
+           ((uint64_t)raw->data[offset+4] << 32) |
+           ((uint64_t)raw->data[offset+3] << 24) |
+           ((uint64_t)raw->data[offset+2] << 16) |
+           ((uint64_t)raw->data[offset+1] << 8)  |
            raw->data[offset];
 }
 
-unsigned short
+uint16_t
 mncl_raw_u16be(MNCL_RAW *raw, int offset)
 {
-    return ((unsigned short)raw->data[offset] << 8) | raw->data[offset+1];
+    return ((uint16_t)raw->data[offset] << 8) | raw->data[offset+1];
 }
 
-unsigned int 
+uint32_t
 mncl_raw_u32be(MNCL_RAW *raw, int offset)
 {
-    return ((unsigned int)raw->data[offset] << 24) | 
-           ((unsigned int)raw->data[offset+1] << 16) | 
-           ((unsigned int)raw->data[offset+2] << 8)  |
+    return ((uint32_t)raw->data[offset] << 24) |
+           ((uint32_t)raw->data[offset+1] << 16) |
+           ((uint32_t)raw->data[offset+2] << 8)  |
            raw->data[offset+3];
 }
 
-unsigned long
+uint64_t
 mncl_raw_u64be(MNCL_RAW *raw, int offset)
 {
-    return ((unsigned long)raw->data[offset] << 56) | 
-           ((unsigned long)raw->data[offset+1] << 48) | 
-           ((unsigned long)raw->data[offset+2] << 40) | 
-           ((unsigned long)raw->data[offset+3] << 32) | 
-           ((unsigned long)raw->data[offset+4] << 24) | 
-           ((unsigned long)raw->data[offset+5] << 16) | 
-           ((unsigned long)raw->data[offset+6] << 8)  |
+    return ((uint64_t)raw->data[offset] << 56) |
+           ((uint64_t)raw->data[offset+1] << 48) |
+           ((uint64_t)raw->data[offset+2] << 40) |
+           ((uint64_t)raw->data[offset+3] << 32) |
+           ((uint64_t)raw->data[offset+4] << 24) |
+           ((uint64_t)raw->data[offset+5] << 16) |
+           ((uint64_t)raw->data[offset+6] << 8)  |
            raw->data[offset+7];
 }
 
-char
+int8_t
 mncl_raw_s8(MNCL_RAW *raw, int offset)
 {
-    return (char)raw->data[offset];
+    return (int8_t)raw->data[offset];
 }
 
-short
+int16_t
 mncl_raw_s16le(MNCL_RAW *raw, int offset)
 {
-    return (short)mncl_raw_u16le(raw, offset);
+    return (int16_t)mncl_raw_u16le(raw, offset);
 }
 
-short
+int16_t
 mncl_raw_s16be(MNCL_RAW *raw, int offset)
 {
-    return (short)mncl_raw_u16be(raw, offset);
+    return (int16_t)mncl_raw_u16be(raw, offset);
 }
 
-int
+int32_t
 mncl_raw_s32le(MNCL_RAW *raw, int offset)
 {
-    return (int)mncl_raw_u32le(raw, offset);
+    return (int32_t)mncl_raw_u32le(raw, offset);
 }
 
-int
+int32_t
 mncl_raw_s32be(MNCL_RAW *raw, int offset)
 {
-    return (int)mncl_raw_u32be(raw, offset);
+    return (int32_t)mncl_raw_u32be(raw, offset);
 }
 
-long
+int64_t
 mncl_raw_s64le(MNCL_RAW *raw, int offset)
 {
-    return (long)mncl_raw_u64le(raw, offset);
+    return (int64_t)mncl_raw_u64le(raw, offset);
 }
 
-long
+int64_t
 mncl_raw_s64be(MNCL_RAW *raw, int offset)
 {
-    return (long)mncl_raw_u64be(raw, offset);
+    return (int64_t)mncl_raw_u64be(raw, offset);
 }
 
 float
 mncl_raw_f32le(MNCL_RAW *raw, int offset)
 {
-    union { unsigned int i; float f; } punner;
+    union { uint32_t i; float f; } punner;
     punner.i = mncl_raw_u32le(raw, offset);
     return punner.f;
 }
@@ -627,7 +627,7 @@ mncl_raw_f32le(MNCL_RAW *raw, int offset)
 float
 mncl_raw_f32be(MNCL_RAW *raw, int offset)
 {
-    union { unsigned int i; float f; } punner;
+    union { uint32_t i; float f; } punner;
     punner.i = mncl_raw_u32be(raw, offset);
     return punner.f;
 }
@@ -635,7 +635,7 @@ mncl_raw_f32be(MNCL_RAW *raw, int offset)
 double
 mncl_raw_f64le(MNCL_RAW *raw, int offset)
 {
-    union { unsigned long i; double f; } punner;
+    union { uint64_t i; double f; } punner;
     punner.i = mncl_raw_u64le(raw, offset);
     return punner.f;
 }
@@ -643,8 +643,7 @@ mncl_raw_f64le(MNCL_RAW *raw, int offset)
 double
 mncl_raw_f64be(MNCL_RAW *raw, int offset)
 {
-    union { unsigned long i; double f; } punner;
+    union { uint64_t i; double f; } punner;
     punner.i = mncl_raw_u64be(raw, offset);
     return punner.f;
 }
-

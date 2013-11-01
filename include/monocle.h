@@ -2,6 +2,7 @@
 #define MONOCLE_H_
 
 #include <stdlib.h>
+#include <stdint.h>
 
 #ifndef MONOCULAR
 #ifdef MONOCLE_EXPORTS
@@ -42,20 +43,20 @@ extern MONOCULAR void mncl_release_raw(MNCL_RAW *raw);
 
 /* Accessors and decoders */
 extern MONOCULAR int mncl_raw_size(MNCL_RAW *raw);
-extern MONOCULAR char mncl_raw_s8(MNCL_RAW *raw, int offset);
-extern MONOCULAR unsigned char mncl_raw_u8(MNCL_RAW *raw, int offset);
-extern MONOCULAR short mncl_raw_s16le(MNCL_RAW *raw, int offset);
-extern MONOCULAR short mncl_raw_s16be(MNCL_RAW *raw, int offset);
-extern MONOCULAR unsigned short mncl_raw_u16le(MNCL_RAW *raw, int offset);
-extern MONOCULAR unsigned short mncl_raw_u16be(MNCL_RAW *raw, int offset);
-extern MONOCULAR int mncl_raw_s32le(MNCL_RAW *raw, int offset);
-extern MONOCULAR int mncl_raw_s32be(MNCL_RAW *raw, int offset);
-extern MONOCULAR unsigned int mncl_raw_u32le(MNCL_RAW *raw, int offset);
-extern MONOCULAR unsigned int mncl_raw_u32be(MNCL_RAW *raw, int offset);
-extern MONOCULAR long mncl_raw_s64le(MNCL_RAW *raw, int offset);
-extern MONOCULAR long mncl_raw_s64be(MNCL_RAW *raw, int offset);
-extern MONOCULAR unsigned long mncl_raw_u64le(MNCL_RAW *raw, int offset);
-extern MONOCULAR unsigned long mncl_raw_u64be(MNCL_RAW *raw, int offset);
+extern MONOCULAR int8_t mncl_raw_s8(MNCL_RAW *raw, int offset);
+extern MONOCULAR uint8_t mncl_raw_u8(MNCL_RAW *raw, int offset);
+extern MONOCULAR int16_t mncl_raw_s16le(MNCL_RAW *raw, int offset);
+extern MONOCULAR int16_t mncl_raw_s16be(MNCL_RAW *raw, int offset);
+extern MONOCULAR uint16_t mncl_raw_u16le(MNCL_RAW *raw, int offset);
+extern MONOCULAR uint16_t mncl_raw_u16be(MNCL_RAW *raw, int offset);
+extern MONOCULAR int32_t mncl_raw_s32le(MNCL_RAW *raw, int offset);
+extern MONOCULAR int32_t mncl_raw_s32be(MNCL_RAW *raw, int offset);
+extern MONOCULAR uint32_t mncl_raw_u32le(MNCL_RAW *raw, int offset);
+extern MONOCULAR uint32_t mncl_raw_u32be(MNCL_RAW *raw, int offset);
+extern MONOCULAR int64_t mncl_raw_s64le(MNCL_RAW *raw, int offset);
+extern MONOCULAR int64_t mncl_raw_s64be(MNCL_RAW *raw, int offset);
+extern MONOCULAR uint64_t mncl_raw_u64le(MNCL_RAW *raw, int offset);
+extern MONOCULAR uint64_t mncl_raw_u64be(MNCL_RAW *raw, int offset);
 extern MONOCULAR float mncl_raw_f32le(MNCL_RAW *raw, int offset);
 extern MONOCULAR float mncl_raw_f32be(MNCL_RAW *raw, int offset);
 extern MONOCULAR double mncl_raw_f64le(MNCL_RAW *raw, int offset);
