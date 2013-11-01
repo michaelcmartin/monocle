@@ -1,4 +1,7 @@
 #include <stdio.h>
+/* We #define MONOCULAR to nothing here because we're using bits of
+ * Monocle as a statically linked component. */
+#define MONOCULAR
 #include "../src/json.c"
 
 void mncl_data_dump(MNCL_DATA *);
