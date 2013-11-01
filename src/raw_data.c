@@ -44,7 +44,7 @@ loadSkip(FILE *f, int n)
 static int
 fstrncmp(FILE *f, int n, const char *s)
 {
-    int i, result;
+    int i, result = 0;
     for (i = 0; i < n; ++i) {
         int c = fgetc(f);
         if (c < 0) {
