@@ -110,10 +110,22 @@ mncl_alloc_sfx(const char *resource_name)
     SDL_RWops *rwops;
     Mix_Chunk *chunk;
     MNCL_SFX *result;
+    
 
     raw = mncl_acquire_raw(resource_name);
     if (!raw) {
         return NULL;
+    }
+
+    {
+        int audio_rate;
+        Uint16 audio_format;
+        int audio_channels;
+        Mix_QuerySpec(&audio_rate, &audio_format, &audio_channels);
+        printf("Opened audio at %d Hz %d bit %s", audio_rate,
+            (audio_format&0xFF),
+            (audio_channels > 2) ? "surround" :
+            (audio_channels > 1) ? "stereo" : "mono");
     }
 
     rwops = SDL_RWFromMem(raw->data, raw->size);

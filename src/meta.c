@@ -10,7 +10,10 @@ mncl_init(void)
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_TIMER)) {
         printf ("SDL_Init Failed! %s\n", SDL_GetError());
     }
-    Mix_OpenAudio(22050, MIX_DEFAULT_FORMAT, 1, 1024);    
+    Mix_Init(MIX_INIT_MOD|MIX_INIT_OGG);
+    if (Mix_OpenAudio(22050, MIX_DEFAULT_FORMAT, 1, 1024)) {
+        printf("Could not open audio: %s\n", Mix_GetError());
+    }
     Mix_AllocateChannels(4);
     Mix_Volume(-1, 128);    
 }
