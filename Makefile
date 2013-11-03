@@ -10,7 +10,7 @@ endif
 
 CFLAGSNOSDL = -Iinclude -g -O0 -Wall
 CFLAGS = $(shell sdl2-config --cflags) $(CFLAGSNOSDL)
-DEMOLDFLAGS = -Wl,-rpath,. -Lbin -lmonocle $(shell sdl2-config --libs)
+DEMOLDFLAGS = -Wl,-rpath,. -Lbin -lmonocle
 
 OBJS = $(patsubst %.c,%.o,$(wildcard src/*.c))
 

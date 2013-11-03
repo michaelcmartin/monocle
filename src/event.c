@@ -1,5 +1,5 @@
 #include "monocle.h"
-#include <SDL/SDL.h>
+#include <SDL.h>
 
 /* Event destructuring functions */
 MNCL_EVENT_TYPE

@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#define SDL_MAIN_HANDLED
 #include <SDL.h>
 #include "monocle.h"
 
