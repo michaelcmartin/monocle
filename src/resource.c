@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "monocle.h"
+#include "monocle_internal.h"
 #include "tree.h"
 
 typedef void *(*ALLOC_FN)(MNCL_DATA *);

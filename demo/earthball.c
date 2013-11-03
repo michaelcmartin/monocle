@@ -72,9 +72,9 @@ main(int argc, char **argv)
         globes[i].dy = (rand() % 5 + 1) * ((rand() % 2) ? 1 : -1);
         globes[i].frame = rand() % 30;
     }
-
+ 
     mncl_init();
-    mncl_config_video(768, 480, 0, 0);
+    mncl_config_video("Earthball Demo", 768, 480, 0, 0);
     mncl_add_resource_zipfile("earthball-res.zip");
 
     mncl_load_resmap("earthball.json");
@@ -89,10 +89,14 @@ main(int argc, char **argv)
     music_volume = 128;
 
     instructions();
+
     mncl_hide_mouse_in_fullscreen(1);
 
     while (!done) {
-        MNCL_EVENT *e = mncl_pop_global_event();
+        MNCL_EVENT *e;
+        printf ("Pre-event\n");
+        e = mncl_pop_global_event();
+        printf ("Monocle event: Type %d\n", e->type);
         switch(e->type) {
         case MNCL_EVENT_QUIT:
             done = 1;
@@ -146,7 +150,9 @@ main(int argc, char **argv)
             }
             break;
         case MNCL_EVENT_UPDATE:
+            printf ("pre-update()\n");
             update();
+            printf ("post-update()\n");
             if (countdown > 0) {
                 if (--countdown == 0) {
                     done = 1;
@@ -154,7 +160,9 @@ main(int argc, char **argv)
             }
             break;
         case MNCL_EVENT_RENDER:
+            printf ("pre-render()\n");
             render();
+            printf ("post-render()\n");
             break;
         default:
             break;

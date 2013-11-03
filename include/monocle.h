@@ -109,7 +109,7 @@ extern MONOCULAR MNCL_DATA *mncl_data_lookup(MNCL_DATA *map, const char *key);
 
 /* Framebuffer component */
 
-extern MONOCULAR int mncl_config_video (int width, int height, int fullscreen, int flags);
+extern MONOCULAR int mncl_config_video (const char *title, int width, int height, int fullscreen, int flags);
 extern MONOCULAR int mncl_is_fullscreen(void);
 extern MONOCULAR int mncl_toggle_fullscreen(void);
 extern MONOCULAR void mncl_set_clear_color(unsigned char r, unsigned char g, unsigned char b);
@@ -128,8 +128,6 @@ typedef struct struct_MNCL_SPRITESHEET MNCL_SPRITESHEET;
 
 extern MONOCULAR MNCL_SPRITESHEET *mncl_alloc_spritesheet(const char *resource_name);
 extern MONOCULAR void mncl_free_spritesheet(MNCL_SPRITESHEET *spritesheet);
-
-extern MONOCULAR void mncl_normalize_spritesheet(MNCL_SPRITESHEET *spritesheet);
 
 extern MONOCULAR void mncl_draw_from_spritesheet(MNCL_SPRITESHEET *spritesheet,
                                 int x, int y,

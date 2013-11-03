@@ -65,6 +65,7 @@ mncl_pop_global_event(void)
     if (current_global_event.type == MNCL_EVENT_QUIT) {
         return &current_global_event;
     }
+    printf ("mncl_pop_global_event: current type is %d\n", current_global_event.type);
     switch (current_global_event.type) {
     case MNCL_EVENT_QUIT:
         /* Once we've quit, we stay quit */
@@ -84,7 +85,9 @@ mncl_pop_global_event(void)
          * stream. */
         while (1) {
             SDL_Event e;
+            printf ("Checking for event\n");
             if (SDL_PollEvent(&e)) {
+                printf ("SDL Event type %d\n", e.type);
                 switch(e.type) {
                 case SDL_QUIT:
                     current_global_event.type = MNCL_EVENT_QUIT;
@@ -139,16 +142,21 @@ mncl_pop_global_event(void)
                 }
             } else {
                 /* No events left! */
+                printf ("No events left\n");
                 current_global_event.type = MNCL_EVENT_UPDATE;
-                return &current_global_event;
+                printf ("Returning result\n");
+                break;
             }
         }
         break;
     case MNCL_EVENT_UPDATE:
+        printf ("pre-UPDATE\n");
         current_global_event.type = MNCL_EVENT_POSTUPDATE;
         break;
-    case MNCL_EVENT_POSTUPDATE:
+    case MNCL_EVENT_POSTUPDATE: 
+        printf ("Beginning frame\n");
         mncl_begin_frame();
+        printf ("Frame Begin succeeded\n");
         current_global_event.type = MNCL_EVENT_PRERENDER;
         break;
     case MNCL_EVENT_PRERENDER:
@@ -184,6 +192,7 @@ mncl_pop_global_event(void)
     default:
         break;
     }
+    printf ("mncl_pop_global_event: Returned event type is: %d\n", current_global_event.type);
     return &current_global_event;
 }
 

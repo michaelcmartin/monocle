@@ -10,20 +10,37 @@
 
 /* The basic framebuffer routines */
 
-static SDL_Surface *screen = NULL;
-static Uint32 clear_color = 0;
+static SDL_Window *screen = NULL;
+static SDL_Renderer *renderer = NULL;
+static Uint8 clear_color_r = 0, clear_color_g = 0, clear_color_b = 0;
 static int is_fullscreen = 0;
 static int hide_mouse = 0;
 
 int
-mncl_config_video(int width, int height, int fullscreen, int flags)
+mncl_config_video(const char *title, int width, int height, int fullscreen, int flags)
 {
-    screen = SDL_SetVideoMode(width, height, 32, SDL_HWSURFACE | SDL_ANYFORMAT | SDL_DOUBLEBUF | (fullscreen ? SDL_FULLSCREEN : 0));
     if (!screen) {
-        return 1;
-    }
+        screen = SDL_CreateWindow(title, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, width, height, fullscreen ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
+        if (!screen) {
+            return 1;
+        }
+        renderer = SDL_CreateRenderer(screen, -1, 0);
+        if (!renderer) {
+            SDL_DestroyWindow(screen);
+            screen = NULL;
+            return 1;
+        }
+        mncl_begin_frame();
+        mncl_end_frame();        
+    } else {
+        SDL_SetWindowFullscreen(screen, fullscreen ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
+        if (!fullscreen) {
+            SDL_SetWindowSize (screen, width, height);
+        }
+    }        
+    SDL_RenderSetLogicalSize(renderer, width, height);
     is_fullscreen = fullscreen;
-    clear_color = SDL_MapRGB(screen->format, 0, 0, 0);
+    clear_color_r = clear_color_g = clear_color_b = 0;
     SDL_ShowCursor((fullscreen && hide_mouse) ? SDL_DISABLE : SDL_ENABLE);
     mncl_renormalize_all_spritesheets();
     return 0;
@@ -38,27 +55,11 @@ mncl_is_fullscreen(void)
 int
 mncl_toggle_fullscreen(void)
 {
-    /* We are not guaranteed that changing fullscreen status keeps the
-     * colormap the same, so we will need to recompute the clear
-     * color. */
-    Uint8 r, g, b;
-    int w, h;
     if (!screen) {
         return is_fullscreen;
     }
-    SDL_GetRGB(clear_color, screen->format, &r, &g, &b);
-    w = screen->w;
-    h = screen->h;
     is_fullscreen = 1-is_fullscreen;
-    mncl_config_video(w, h, is_fullscreen, 0);
-    if (!screen) {
-        /* Revert if it didn't work. This should never realistically fail. */
-        is_fullscreen = 1-is_fullscreen;
-        mncl_config_video(w, h, is_fullscreen, 0);
-    }
-    if (screen) {
-        mncl_set_clear_color(r, g, b);
-    }
+    SDL_SetWindowFullscreen(screen, is_fullscreen ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
 
     return is_fullscreen;
 }
@@ -66,7 +67,9 @@ mncl_toggle_fullscreen(void)
 void
 mncl_set_clear_color(unsigned char r, unsigned char g, unsigned char b)
 {
-    clear_color = SDL_MapRGB(screen->format, r, g, b);
+    clear_color_r = r;
+    clear_color_g = g;
+    clear_color_b = b;
 }
 
 void
@@ -81,13 +84,14 @@ mncl_hide_mouse_in_fullscreen(int val)
 void
 mncl_begin_frame(void)
 {
-    SDL_FillRect(screen, NULL, clear_color);
+    SDL_SetRenderDrawColor(renderer, clear_color_r, clear_color_g, clear_color_b, 255);
+    SDL_RenderClear(renderer);
 }
 
 void
 mncl_end_frame(void)
 {
-    SDL_Flip(screen);
+    SDL_RenderPresent(renderer);
 }
 
 void
@@ -95,17 +99,16 @@ mncl_draw_rect(int x, int y, int w, int h,
                unsigned char r, unsigned char g, unsigned char b)
 {
     SDL_Rect rect;
-    Uint32 col;
     rect.x = x;
     rect.y = y;
     rect.w = w;
     rect.h = h;
-    col = SDL_MapRGB(screen->format, r, g, b);
-    SDL_FillRect(screen, &rect, col);
+    SDL_SetRenderDrawColor(renderer, r, g, b, 255);
+    SDL_RenderFillRect(renderer, &rect);
 }
 
 struct struct_MNCL_SPRITESHEET {
-    SDL_Surface *core, *used;
+    SDL_Texture *tex;
 };
 
 MNCL_SPRITESHEET *
@@ -113,6 +116,13 @@ mncl_alloc_spritesheet(const char *resource_name)
 {
     MNCL_SPRITESHEET *spritesheet;
     MNCL_RAW *raw;
+    SDL_Surface *loaded;
+
+    if (!renderer) {
+        /* TODO: Make this requirement not hold */
+        fprintf(stderr, "ERROR: Don't load spritesheets before configuring video\n");
+        return NULL;
+    }
 
     raw = mncl_acquire_raw(resource_name);
     if (!raw) {
@@ -123,14 +133,22 @@ mncl_alloc_spritesheet(const char *resource_name)
     if (!spritesheet) {
         return NULL;
     }
-    spritesheet->core = IMG_Load_RW(SDL_RWFromMem(raw->data, raw->size), 1);
-    if (!spritesheet->core) {
+    loaded = IMG_Load_RW(SDL_RWFromMem(raw->data, raw->size), 1);
+    if (!loaded) {
         free(spritesheet);
         mncl_release_raw(raw);
         return NULL;
     }
-    spritesheet->used = NULL;
-    mncl_normalize_spritesheet(spritesheet);
+    spritesheet->tex = SDL_CreateTextureFromSurface(renderer, loaded);
+    if (!spritesheet->tex) {
+        free(spritesheet);
+        spritesheet = NULL;
+        printf ("Failed to make a texture for %s\n", resource_name);
+        /* Fall through to cleanup */
+    } else {
+        printf ("Successfully made a texture for %s\n", resource_name);
+    }
+    SDL_FreeSurface(loaded);
     mncl_release_raw(raw);
     return spritesheet;
 }
@@ -138,21 +156,8 @@ mncl_alloc_spritesheet(const char *resource_name)
 void
 mncl_normalize_spritesheet(MNCL_SPRITESHEET *spritesheet)
 {
-    if (!spritesheet) {
-        /* Can't normalize if there's nothing to normalize */
-        return;
-    }
-    if (!screen) {
-        /* Can't normalize if there's nothing to normalize to */
-        return;
-    }
-    if (spritesheet->used && spritesheet->used != spritesheet->core) {
-        SDL_FreeSurface(spritesheet->used);
-    }
-    spritesheet->used = SDL_DisplayFormatAlpha(spritesheet->core);
-    if (!spritesheet->used) {
-        spritesheet->used = spritesheet->core;
-    }
+    /* This might do the work of actually setting up the texture,
+     * maybe? */
 }
 
 void
@@ -161,10 +166,7 @@ mncl_free_spritesheet(MNCL_SPRITESHEET *spritesheet)
     if (!spritesheet) {
         return;
     }
-    if (spritesheet->used != spritesheet->core) {
-        SDL_FreeSurface(spritesheet->used);
-    }
-    SDL_FreeSurface(spritesheet->core);
+    SDL_DestroyTexture(spritesheet->tex);
     free(spritesheet);
 }
 
@@ -176,11 +178,13 @@ mncl_draw_from_spritesheet(MNCL_SPRITESHEET *spritesheet,
     SDL_Rect src, dest;
     dest.x = x;
     dest.y = y;
+    dest.w = my_w;
+    dest.h = my_h;
     src.x = my_x;
     src.y = my_y;
     src.w = my_w;
     src.h = my_h;
-    SDL_BlitSurface(spritesheet->used, &src, screen, &dest);
+    SDL_RenderCopy(renderer, spritesheet->tex, &src, &dest);
 }
 
 MNCL_SPRITE *

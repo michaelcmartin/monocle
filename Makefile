@@ -8,9 +8,9 @@ else
     MONOCLEBIN=libmonocle.so
 endif
 
-CFLAGSNOSDL = -Iinclude -O2 -Wall
-CFLAGS = $(shell sdl-config --cflags) $(CFLAGSNOSDL)
-DEMOLDFLAGS = -Wl,-rpath,. -Lbin -lmonocle $(shell sdl-config --libs)
+CFLAGSNOSDL = -Iinclude -g -O0 -Wall
+CFLAGS = $(shell sdl2-config --cflags) $(CFLAGSNOSDL)
+DEMOLDFLAGS = -Wl,-rpath,. -Lbin -lmonocle $(shell sdl2-config --libs)
 
 OBJS = $(patsubst %.c,%.o,$(wildcard src/*.c))
 
@@ -20,7 +20,7 @@ lib/libmonocle.a: lib $(OBJS)
 	ar cr lib/libmonocle.a $(OBJS)
 
 bin/$(MONOCLEBIN): bin $(OBJS)
-	gcc -o bin/$(MONOCLEBIN) -shared $(CFLAGS) $(OSLDFLAGS) -fvisibility-inlines-hidden $(OBJS) $(shell sdl-config --libs) -lSDL_mixer -lSDL_image -lz
+	gcc -o bin/$(MONOCLEBIN) -shared $(CFLAGS) $(OSLDFLAGS) -fvisibility-inlines-hidden $(OBJS) $(shell sdl2-config --libs) -lSDL2_mixer -lSDL2_image -lz
 
 bin/earthball: bin/$(MONOCLEBIN) demo/earthball.c bin/earthball-res.zip
 	gcc -o bin/earthball $(CFLAGS) demo/earthball.c $(DEMOLDFLAGS)
@@ -56,5 +56,5 @@ src/framebuffer.o: include/monocle.h src/monocle_internal.h
 src/json.o: include/monocle.h
 src/meta.o: include/monocle.h src/monocle_internal.h
 src/raw_data.o: include/monocle.h src/tree.h
-src/resource.o: include/monocle.h src/tree.h
+src/resource.o: include/monocle.h src/monocle_internal.h src/tree.h
 src/tree.o: src/tree.h include/monocle.h

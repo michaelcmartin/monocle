@@ -47,7 +47,7 @@ mncl_play_music_file(const char *pathname, int fade_in_ms)
         mncl_stop_music();
         return;
     }
-    current_bgm = Mix_LoadMUS_RW(bgm_rw);
+    current_bgm = Mix_LoadMUS_RW(bgm_rw, 1);
     if (!current_bgm) {
         /* Should probably log some kind of error here */
         mncl_stop_music();
