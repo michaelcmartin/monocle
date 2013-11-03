@@ -147,7 +147,7 @@ mncl_pop_global_event(void)
     case MNCL_EVENT_UPDATE:
         current_global_event.type = MNCL_EVENT_POSTUPDATE;
         break;
-    case MNCL_EVENT_POSTUPDATE: 
+    case MNCL_EVENT_POSTUPDATE:
         mncl_begin_frame();
         current_global_event.type = MNCL_EVENT_PRERENDER;
         break;

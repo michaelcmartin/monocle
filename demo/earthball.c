@@ -73,7 +73,7 @@ main(int argc, char **argv)
         globes[i].dy = (rand() % 5 + 1) * ((rand() % 2) ? 1 : -1);
         globes[i].frame = rand() % 30;
     }
- 
+
     mncl_init();
     mncl_config_video("Earthball Demo", 768, 480, 0, 0);
     mncl_add_resource_zipfile("earthball-res.zip");
@@ -94,8 +94,7 @@ main(int argc, char **argv)
     mncl_hide_mouse_in_fullscreen(1);
 
     while (!done) {
-        MNCL_EVENT *e;
-        e = mncl_pop_global_event();
+        MNCL_EVENT *e = mncl_pop_global_event();
         switch(e->type) {
         case MNCL_EVENT_QUIT:
             done = 1;
