@@ -13,7 +13,7 @@
 static SDL_Window *screen = NULL;
 static SDL_Renderer *renderer = NULL;
 static Uint8 clear_color_r = 0, clear_color_g = 0, clear_color_b = 0;
-static int is_fullscreen = 0;
+static int is_fullscreen = 0, win_width = 0, win_height = 0;
 static int hide_mouse = 0;
 
 int
@@ -41,6 +41,8 @@ mncl_config_video(const char *title, int width, int height, int fullscreen, int 
     SDL_RenderSetLogicalSize(renderer, width, height);
     is_fullscreen = fullscreen;
     clear_color_r = clear_color_g = clear_color_b = 0;
+    win_width = width;
+    win_height = height;
     SDL_ShowCursor((fullscreen && hide_mouse) ? SDL_DISABLE : SDL_ENABLE);
     mncl_renormalize_all_spritesheets();
     return 0;
@@ -60,6 +62,10 @@ mncl_toggle_fullscreen(void)
     }
     is_fullscreen = 1-is_fullscreen;
     SDL_SetWindowFullscreen(screen, is_fullscreen ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
+    SDL_ShowCursor((is_fullscreen && hide_mouse) ? SDL_DISABLE : SDL_ENABLE);
+    if (!is_fullscreen) {
+        SDL_SetWindowSize(screen, win_width, win_height);
+    }
 
     return is_fullscreen;
 }
