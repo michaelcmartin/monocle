@@ -339,6 +339,8 @@ Pretty self-explanatory, other than that volumes can range from 0 to 128, and th
 
 Sound effects are .wav files. Monocle will allow up to four sound effects to play simultaneously.
 
+At the moment, Monocle's sound backend is the SDL2_mixer library. This library is a little finicky about what kinds of .wav files it will consume; you will basically have to ensure that it gets either 11025, 22050, or 44100 Hz WAV files or the playback may fail.
+
 ### Data Structures ###
 
 ```C
