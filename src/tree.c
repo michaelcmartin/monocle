@@ -124,6 +124,7 @@ mncl_kv_delete(MNCL_KV *kv, const char *key)
     if (result) {
         kv->deleter(result->value);
         tree_delete(&kv->tree, (TREE_NODE *)result);
+        free(result);
     }
 }
 
