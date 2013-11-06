@@ -38,8 +38,8 @@ typedef struct struct_MNCL_RAW {
 
 extern MONOCULAR int mncl_add_resource_directory(const char *pathname);
 extern MONOCULAR int mncl_add_resource_zipfile(const char *pathname);
-extern MONOCULAR MNCL_RAW *mncl_acquire_raw(const char *resource_name);
-extern MONOCULAR void mncl_release_raw(MNCL_RAW *raw);
+
+extern MONOCULAR MNCL_RAW *mncl_raw_resource(const char *resource);
 
 /* Accessors and decoders */
 extern MONOCULAR int mncl_raw_size(MNCL_RAW *raw);
@@ -100,6 +100,8 @@ typedef struct mncl_data_value_ {
     } value;
 } MNCL_DATA;
 
+extern MONOCULAR MNCL_DATA *mncl_data_resource(const char *resource);
+
 extern MONOCULAR MNCL_DATA *mncl_parse_data(const char *data, size_t size);
 extern MONOCULAR MNCL_DATA *mncl_data_clone (MNCL_DATA *src);
 extern MONOCULAR void mncl_free_data (MNCL_DATA *mncl_data);
@@ -126,9 +128,7 @@ extern MONOCULAR void mncl_draw_rect(int x, int y, int w, int h,
 struct struct_MNCL_SPRITESHEET;
 typedef struct struct_MNCL_SPRITESHEET MNCL_SPRITESHEET;
 
-extern MONOCULAR MNCL_SPRITESHEET *mncl_alloc_spritesheet(const char *resource_name);
-extern MONOCULAR void mncl_free_spritesheet(MNCL_SPRITESHEET *spritesheet);
-
+extern MONOCULAR MNCL_SPRITESHEET *mncl_spritesheet_resource(const char *resource);
 extern MONOCULAR void mncl_draw_from_spritesheet(MNCL_SPRITESHEET *spritesheet,
                                 int x, int y,
                                 int my_x, int my_y,
@@ -136,7 +136,7 @@ extern MONOCULAR void mncl_draw_from_spritesheet(MNCL_SPRITESHEET *spritesheet,
 
 /* Music Component */
 
-extern MONOCULAR void mncl_play_music_file(const char *pathname, int fade_in_ms);
+extern MONOCULAR void mncl_play_music_resource(const char *resource, int fade_in_ms);
 extern MONOCULAR void mncl_stop_music(void);
 extern MONOCULAR void mncl_fade_out_music(int ms);
 extern MONOCULAR void mncl_music_volume(int volume);
@@ -148,10 +148,16 @@ extern MONOCULAR void mncl_resume_music(void);
 struct struct_MNCL_SFX;
 typedef struct struct_MNCL_SFX MNCL_SFX;
 
-extern MONOCULAR MNCL_SFX *mncl_alloc_sfx(const char *resource_name);
-extern MONOCULAR void mncl_free_sfx(MNCL_SFX *sfx);
-
+extern MONOCULAR MNCL_SFX *mncl_sfx_resource(const char *resource);
 extern MONOCULAR void mncl_play_sfx(MNCL_SFX *sfx, int volume);
+
+/* Sprite component */
+
+struct struct_MNCL_SPRITE;
+typedef struct struct_MNCL_SPRITE MNCL_SPRITE;
+
+extern MONOCULAR MNCL_SPRITE *mncl_sprite_resource(const char *resource);
+extern MONOCULAR void mncl_draw_sprite(MNCL_SPRITE *s, int x, int y, int frame);
 
 /* Event component */
 
@@ -202,35 +208,10 @@ extern MONOCULAR int mncl_event_joy_stick(MNCL_EVENT *evt);
 extern MONOCULAR int mncl_event_joy_index(MNCL_EVENT *evt);
 extern MONOCULAR int mncl_event_joy_value(MNCL_EVENT *evt);
 
-/* Sprite component. Everything but mncl_draw_sprite may eventually be
- * internalized. */
-
-typedef struct struct_MNCL_FRAME {
-    MNCL_SPRITESHEET *sheet;
-    int x, y;
-} MNCL_FRAME;
-
-typedef struct struct_MNCL_SPRITE {
-    int w, h, hot_x, hot_y, hit_x, hit_y, hit_w, hit_h;
-    int nframes;
-    MNCL_FRAME frames[0];
-} MNCL_SPRITE;
-
-extern MONOCULAR MNCL_SPRITE *mncl_alloc_sprite(int nframes);
-extern MONOCULAR void mncl_free_sprite(MNCL_SPRITE *sprite);
-extern MONOCULAR void mncl_draw_sprite(MNCL_SPRITE *s, int x, int y, int frame);
-
 /* Resource component */
 extern MONOCULAR void mncl_load_resmap(const char *path);
 extern MONOCULAR void mncl_unload_resmap(const char *path);
 extern MONOCULAR void mncl_unload_all_resources(void);
-
-extern MONOCULAR MNCL_RAW *mncl_raw_resource(const char *resource);
-extern MONOCULAR MNCL_SPRITESHEET *mncl_spritesheet_resource(const char *resource);
-extern MONOCULAR MNCL_SPRITE *mncl_sprite_resource(const char *resource);
-extern MONOCULAR MNCL_SFX *mncl_sfx_resource(const char *resource);
-extern MONOCULAR MNCL_DATA *mncl_data_resource(const char *resource);
-extern MONOCULAR void mncl_play_music_resource(const char *resource, int fade_in_ms);
 
 #ifdef __cplusplus
 }

@@ -32,7 +32,7 @@ bin/earthball: bin/$(MONOCLEBIN) demo/earthball.c bin/earthball-res.zip
 	gcc -o bin/earthball $(CFLAGS) demo/earthball.c $(DEMOLDFLAGS)
 
 bin/rawtest: bin/$(MONOCLEBIN) demo/rawtest.c
-	cp demo/resources/rawtest.zip demo/resources/shadow.txt bin/ && gcc -o bin/rawtest $(CFLAGS) demo/rawtest.c $(DEMOLDFLAGS)
+	cp demo/resources/rawtest.zip demo/resources/shadow.txt demo/resources/rawtest.json bin/ && gcc -o bin/rawtest $(CFLAGS) demo/rawtest.c $(DEMOLDFLAGS)
 
 bin/jsontest: demo/json-test.c src/json.c src/tree.c src/tree.h
 	gcc -o bin/jsontest $(CFLAGSNOSDL) demo/json-test.c src/tree.c
@@ -56,7 +56,7 @@ $(OBJS): %.o: %.c
 	gcc -o $@ -c $(CFLAGS) $(OSCFLAGS) -DMONOCLE_EXPORTS $<
 # DO NOT DELETE
 
-src/audio.o: include/monocle.h
+src/audio.o: src/monocle_internal.h include/monocle.h
 src/event.o: include/monocle.h
 src/framebuffer.o: include/monocle.h src/monocle_internal.h
 src/json.o: include/monocle.h

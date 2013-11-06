@@ -1,7 +1,7 @@
 #include <SDL.h>
 #include <SDL_mixer.h>
 #include "string.h"
-#include "monocle.h"
+#include "monocle_internal.h"
 
 /* We can save ourselves some grief if it's legal to release the raw
  * data after the music is constructed; however, I'm pretty sure this
