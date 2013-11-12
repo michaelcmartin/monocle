@@ -26,7 +26,7 @@ lib/libmonocle.a: lib $(OBJS)
 	ar cr lib/libmonocle.a $(OBJS)
 
 bin/$(MONOCLEBIN): bin $(OBJS)
-	gcc -o bin/$(MONOCLEBIN) -shared $(CFLAGS) $(OSLDFLAGS) -fvisibility-inlines-hidden $(OBJS) $(MONOCLELIBS) -lSDL2_mixer -lSDL2_image -lz
+	gcc -o bin/$(MONOCLEBIN) -shared $(CFLAGS) $(OSLDFLAGS) -fvisibility-inlines-hidden $(OBJS) $(MONOCLELIBS) -lSDL2_mixer -lSDL2_image -lz -lm
 
 bin/earthball: bin/$(MONOCLEBIN) demo/earthball.c bin/earthball-res.zip
 	gcc -o bin/earthball $(CFLAGS) demo/earthball.c $(DEMOLDFLAGS)

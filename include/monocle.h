@@ -159,6 +159,17 @@ typedef struct struct_MNCL_SPRITE MNCL_SPRITE;
 extern MONOCULAR MNCL_SPRITE *mncl_sprite_resource(const char *resource);
 extern MONOCULAR void mncl_draw_sprite(MNCL_SPRITE *s, int x, int y, int frame);
 
+/* Object component */
+
+typedef struct struct_MNCL_OBJECT {
+    /* location (x, y), animation frame f */
+    float x, y, f;
+    /* amount these change per frame */
+    float dx, dy, df;
+    /* Which graphic is used to render or collision check */
+    MNCL_SPRITE *sprite;
+} MNCL_OBJECT;
+
 /* Event component */
 
 typedef enum {
@@ -180,7 +191,6 @@ typedef enum {
     MNCL_EVENT_RENDER,
     MNCL_EVENT_POSTRENDER,
     MNCL_EVENT_FRAMEBOUNDARY,
-    /* ... */
     MNCL_NUM_EVENTS
 } MNCL_EVENT_TYPE;
 
@@ -192,7 +202,8 @@ typedef struct struct_MNCL_EVENT {
         struct { int x, y; } mousemove;
         int mousebutton;
         struct { int stick, index, value; } joystick;
-        /* ... */
+        MNCL_OBJECT *self;
+        struct { MNCL_OBJECT *self, *other; } collision;
     } value;
 } MNCL_EVENT;
 
