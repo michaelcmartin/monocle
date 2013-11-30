@@ -263,14 +263,14 @@ class Monocle(object):
     # Sprite component. Everything but mncl_draw_sprite may eventually be
     # internalized.
 
-    def alloc_sprite(self, nframes):
-        return _mncl.mncl_alloc_sprite(nframes)
+    # def alloc_sprite(self, nframes):
+    #     return _mncl.mncl_alloc_sprite(nframes)
 
-    def free_sprite(self, sprite):
-        return _mncl.mncl_free_sprite(sprite)
+    # def free_sprite(self, sprite):
+    #     return _mncl.mncl_free_sprite(sprite)
 
-    def draw_sprite(self, s, x, y, frame):
-        return _mncl.mncl_draw_sprite(s, x, y, frame)
+    # def draw_sprite(self, s, x, y, frame):
+    #     return _mncl.mncl_draw_sprite(s, x, y, frame)
 
     # Resource component
 
@@ -290,7 +290,10 @@ class Monocle(object):
         return _mncl.mncl_spritesheet_resource(resource)
 
     def sprite_resource(self, resource):
-        return _mncl.mncl_sprite_resource(resource)
+        return MonocleSprite(_mncl.mncl_sprite_resource(resource))
+
+    # def sprite_resource(self, resource):
+    #     return _mncl.mncl_sprite_resource(resource)
 
     def sfx_resource(self, resource):
         return _mncl.mncl_sfx_resource(resource)
@@ -300,6 +303,26 @@ class Monocle(object):
 
     def play_music_resource(self, resource, fade_in_ms):
         return _mncl.mncl_play_music_resource(resource, fade_in_ms)
+
+
+class MonocleSprite(object):
+    def __init__(self, mncl_sprite):
+        self._mncl_sprite = mncl_sprite
+
+    def free(self):
+        _mncl.mncl_free_sprite(self._mncl_sprite)
+        self._mncl_sprite = None
+
+    def draw(self, x, y, frame):
+        _mncl.mncl_draw_sprite(self._mncl_sprite, x, y, frame)
+
+
+for name in [
+        'w', 'h', 'hot_x', 'hot_y', 'hit_x', 'hit_y', 'hit_w', 'hit_h',
+        'nframes']:
+    def _attr(self, name=name):
+        return getattr(self._mncl_sprite, name)
+    setattr(MonocleSprite, name, property(_attr))
 
 
 class Keycodes(object):

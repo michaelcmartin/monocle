@@ -4,15 +4,16 @@ from pymonocle import Monocle, keycodes
 
 
 class Globe(object):
-    def __init__(self, x_max, y_max):
-        self.x_max = x_max - 64
-        self.y_max = y_max - 64
+    def __init__(self, x_max, y_max, sprite):
+        self.sprite = sprite
+        self.x_max = x_max - sprite.w
+        self.y_max = y_max - sprite.h
 
         self.x = random.randint(0, self.x_max)
         self.y = random.randint(0, self.y_max)
         self.dx = random.randint(1, 5) * random.choice([-1, 1])
         self.dy = random.randint(1, 5) * random.choice([-1, 1])
-        self.frame = random.randint(0, 29)
+        self.frame = random.choice(range(sprite.nframes))
 
     def update(self):
         self.x += self.dx
@@ -33,8 +34,8 @@ class Globe(object):
 
         self.frame = (self.frame + 1) % 30
 
-    def draw(self, mncl, earth):
-        mncl.draw_sprite(earth, self.x, self.y, self.frame)
+    def draw(self):
+        self.sprite.draw(self.x, self.y, self.frame)
 
 
 class EarthBall(object):
@@ -63,10 +64,9 @@ class EarthBall(object):
     def render(self):
         self.mncl.draw_rect(256, 112, 256, 256, 128, 128, 128)
         for globe in self.globes:
-            globe.draw(self.mncl, self.earth)
+            globe.draw()
 
     def run(self):
-        self.globes = [Globe(768, 480) for _ in xrange(16)]
 
         self.mncl.init()
         self.mncl.config_video("Earthball Demo", 768, 480, 0, 0)
@@ -76,6 +76,8 @@ class EarthBall(object):
         self.earth = self.mncl.sprite_resource("earth")
         self.sfx = self.mncl.sfx_resource("sfx")
         self.mncl.play_music_resource("bgm", 2000)
+
+        self.globes = [Globe(768, 480, self.earth) for _ in xrange(16)]
 
         done = False
         countdown = 0
