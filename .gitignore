@@ -18,3 +18,6 @@ lib/*
 *.bak
 *~
 
+# Python stuff
+__pycache__
+*.pyc

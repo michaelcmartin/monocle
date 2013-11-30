@@ -1,0 +1,211 @@
+
+/* This is copied wholesale from monocle.h and edited to remove a bunch of
+   things that don't belong in a cdef. */
+
+/* Meta Component */
+
+void mncl_init(void);
+void mncl_uninit(void);
+
+/* Raw Data Component */
+
+typedef struct struct_MNCL_RAW {
+    unsigned char *data;
+    unsigned int size;
+} MNCL_RAW;
+
+int mncl_add_resource_directory(const char *pathname);
+int mncl_add_resource_zipfile(const char *pathname);
+MNCL_RAW *mncl_acquire_raw(const char *resource_name);
+void mncl_release_raw(MNCL_RAW *raw);
+
+/* Accessors and decoders */
+int mncl_raw_size(MNCL_RAW *raw);
+int8_t mncl_raw_s8(MNCL_RAW *raw, int offset);
+uint8_t mncl_raw_u8(MNCL_RAW *raw, int offset);
+int16_t mncl_raw_s16le(MNCL_RAW *raw, int offset);
+int16_t mncl_raw_s16be(MNCL_RAW *raw, int offset);
+uint16_t mncl_raw_u16le(MNCL_RAW *raw, int offset);
+uint16_t mncl_raw_u16be(MNCL_RAW *raw, int offset);
+int32_t mncl_raw_s32le(MNCL_RAW *raw, int offset);
+int32_t mncl_raw_s32be(MNCL_RAW *raw, int offset);
+uint32_t mncl_raw_u32le(MNCL_RAW *raw, int offset);
+uint32_t mncl_raw_u32be(MNCL_RAW *raw, int offset);
+int64_t mncl_raw_s64le(MNCL_RAW *raw, int offset);
+int64_t mncl_raw_s64be(MNCL_RAW *raw, int offset);
+uint64_t mncl_raw_u64le(MNCL_RAW *raw, int offset);
+uint64_t mncl_raw_u64be(MNCL_RAW *raw, int offset);
+float mncl_raw_f32le(MNCL_RAW *raw, int offset);
+float mncl_raw_f32be(MNCL_RAW *raw, int offset);
+double mncl_raw_f64le(MNCL_RAW *raw, int offset);
+double mncl_raw_f64be(MNCL_RAW *raw, int offset);
+
+/* Key-value map component */
+
+struct struct_MNCL_KV;
+typedef struct struct_MNCL_KV MNCL_KV;
+typedef void (*MNCL_KV_DELETER)(void *value);
+typedef void (*MNCL_KV_VALUE_FN)(const char *key, void *value, void *user);
+
+MNCL_KV *mncl_alloc_kv(MNCL_KV_DELETER deleter);
+void mncl_free_kv(MNCL_KV *kv);
+
+int mncl_kv_insert(MNCL_KV *kv, const char *key, void *value);
+void *mncl_kv_find(MNCL_KV *kv, const char *key);
+void mncl_kv_delete(MNCL_KV *kv, const char *key);
+
+void mncl_kv_foreach(MNCL_KV *kv, MNCL_KV_VALUE_FN fn, void *user);
+
+/* Semi-structured data component */
+
+typedef enum {
+    MNCL_DATA_NULL,
+    MNCL_DATA_BOOLEAN,
+    MNCL_DATA_NUMBER,
+    MNCL_DATA_STRING,
+    MNCL_DATA_ARRAY,
+    MNCL_DATA_OBJECT
+} MNCL_DATA_TYPE;
+
+typedef struct mncl_data_value_ {
+    MNCL_DATA_TYPE tag;
+    union {
+        int boolean;
+        double number;
+        char *string;
+        struct { int size; struct mncl_data_value_ **data; } array;
+        MNCL_KV *object;
+    } value;
+} MNCL_DATA;
+
+MNCL_DATA *mncl_parse_data(const char *data, size_t size);
+MNCL_DATA *mncl_data_clone (MNCL_DATA *src);
+void mncl_free_data (MNCL_DATA *mncl_data);
+
+const char *mncl_data_error();
+MNCL_DATA *mncl_data_lookup(MNCL_DATA *map, const char *key);
+
+/* Framebuffer component */
+
+int mncl_config_video (const char *title, int width, int height, int fullscreen, int flags);
+int mncl_is_fullscreen(void);
+int mncl_toggle_fullscreen(void);
+void mncl_set_clear_color(unsigned char r, unsigned char g, unsigned char b);
+void mncl_hide_mouse_in_fullscreen(int val);
+
+void mncl_begin_frame(void);
+void mncl_end_frame(void);
+
+void mncl_draw_rect(int x, int y, int w, int h, 
+                                     unsigned char r, unsigned char g, unsigned char b);
+
+/* Spritesheet Component */
+
+struct struct_MNCL_SPRITESHEET;
+typedef struct struct_MNCL_SPRITESHEET MNCL_SPRITESHEET;
+
+MNCL_SPRITESHEET *mncl_alloc_spritesheet(const char *resource_name);
+void mncl_free_spritesheet(MNCL_SPRITESHEET *spritesheet);
+
+void mncl_draw_from_spritesheet(MNCL_SPRITESHEET *spritesheet,
+                                int x, int y,
+                                int my_x, int my_y,
+                                int my_w, int my_h);
+
+/* Music Component */
+
+void mncl_play_music_file(const char *pathname, int fade_in_ms);
+void mncl_stop_music(void);
+void mncl_fade_out_music(int ms);
+void mncl_music_volume(int volume);
+void mncl_pause_music(void);
+void mncl_resume_music(void);
+
+/* SFX Component */
+
+struct struct_MNCL_SFX;
+typedef struct struct_MNCL_SFX MNCL_SFX;
+
+MNCL_SFX *mncl_alloc_sfx(const char *resource_name);
+void mncl_free_sfx(MNCL_SFX *sfx);
+
+void mncl_play_sfx(MNCL_SFX *sfx, int volume);
+
+/* Event component */
+
+typedef enum {
+    MNCL_EVENT_QUIT,
+    MNCL_EVENT_PREUPDATE,
+    MNCL_EVENT_KEYDOWN,
+    MNCL_EVENT_KEYUP,
+    MNCL_EVENT_MOUSEMOVE,
+    MNCL_EVENT_MOUSEBUTTONDOWN,
+    MNCL_EVENT_MOUSEBUTTONUP,
+    MNCL_EVENT_JOYAXISMOVE,
+    MNCL_EVENT_JOYBUTTONDOWN,
+    MNCL_EVENT_JOYBUTTONUP,
+    MNCL_EVENT_JOYHATMOVE,
+    MNCL_EVENT_UPDATE,
+    MNCL_EVENT_COLLISION,
+    MNCL_EVENT_POSTUPDATE,
+    MNCL_EVENT_PRERENDER,
+    MNCL_EVENT_RENDER,
+    MNCL_EVENT_POSTRENDER,
+    MNCL_EVENT_FRAMEBOUNDARY,
+    /* ... */
+    MNCL_NUM_EVENTS
+} MNCL_EVENT_TYPE;
+
+typedef struct struct_MNCL_EVENT {
+    MNCL_EVENT_TYPE type;
+    int subscriber;
+    union {
+        int key;
+        struct { int x, y; } mousemove;
+        int mousebutton;
+        struct { int stick, index, value; } joystick;
+        /* ... */
+    } value;
+} MNCL_EVENT;
+
+MNCL_EVENT *mncl_pop_global_event(void);
+
+MNCL_EVENT_TYPE mncl_event_type(MNCL_EVENT *evt);
+int mncl_event_subscriber(MNCL_EVENT *evt);
+int mncl_event_key(MNCL_EVENT *evt);
+int mncl_event_mouse_x(MNCL_EVENT *evt);
+int mncl_event_mouse_y(MNCL_EVENT *evt);
+int mncl_event_mouse_button(MNCL_EVENT *evt);
+int mncl_event_joy_stick(MNCL_EVENT *evt);
+int mncl_event_joy_index(MNCL_EVENT *evt);
+int mncl_event_joy_value(MNCL_EVENT *evt);
+
+/* Sprite component. Everything but mncl_draw_sprite may eventually be
+ * internalized. */
+
+typedef struct struct_MNCL_FRAME {
+    MNCL_SPRITESHEET *sheet;
+    int x, y;
+} MNCL_FRAME;
+
+typedef struct struct_MNCL_SPRITE {
+    int w, h, hot_x, hot_y, hit_x, hit_y, hit_w, hit_h;
+    int nframes;
+    MNCL_FRAME frames[0];
+} MNCL_SPRITE;
+
+MNCL_SPRITE *mncl_alloc_sprite(int nframes);
+void mncl_free_sprite(MNCL_SPRITE *sprite);
+void mncl_draw_sprite(MNCL_SPRITE *s, int x, int y, int frame);
+
+/* Resource component */
+void mncl_load_resmap(const char *path);
+void mncl_unload_resmap(const char *path);
+void mncl_unload_all_resources(void);
+
+MNCL_RAW *mncl_raw_resource(const char *resource);
+MNCL_SPRITESHEET *mncl_spritesheet_resource(const char *resource);
+MNCL_SPRITE *mncl_sprite_resource(const char *resource);
+MNCL_SFX *mncl_sfx_resource(const char *resource);
+MNCL_DATA *mncl_data_resource(const char *resource);
+void mncl_play_music_resource(const char *resource, int fade_in_ms);
