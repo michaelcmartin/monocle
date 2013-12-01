@@ -170,6 +170,8 @@ typedef struct struct_MNCL_OBJECT {
     MNCL_SPRITE *sprite;
 } MNCL_OBJECT;
 
+extern MONOCULAR MNCL_OBJECT *mncl_create_object(void);
+
 /* Event component */
 
 typedef enum {

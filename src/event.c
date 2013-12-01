@@ -1,4 +1,5 @@
 #include "monocle.h"
+#include "monocle_internal.h"
 #include <SDL.h>
 
 /* Event destructuring functions */
@@ -70,6 +71,19 @@ mncl_pop_global_event(void)
         /* Once we've quit, we stay quit */
         break;
     case MNCL_EVENT_PREUPDATE:
+        if (!current_global_event.value.self) {
+            current_global_event.value.self = object_begin(MNCL_EVENT_PREUPDATE);
+        } else {
+            current_global_event.value.self = object_next();
+        }
+        if (current_global_event.value.self) {
+            /* The NULL case was handled by the FRAMEBOUNDARY
+             * event. If we have an object awaiting a PREUPDATE
+             * message we return it here. */
+            break;
+        }
+        /* Otherwise, we've completed our iteration and are done with
+         * pre-update objects. Fall through to input. */
     case MNCL_EVENT_KEYDOWN:
     case MNCL_EVENT_KEYUP:
     case MNCL_EVENT_MOUSEMOVE:
@@ -140,22 +154,49 @@ mncl_pop_global_event(void)
             } else {
                 /* No events left! */
                 current_global_event.type = MNCL_EVENT_UPDATE;
+                current_global_event.value.self = NULL;
                 break;
             }
         }
         break;
     case MNCL_EVENT_UPDATE:
-        current_global_event.type = MNCL_EVENT_POSTUPDATE;
+        if (!current_global_event.value.self) {
+            current_global_event.value.self = object_begin(MNCL_EVENT_UPDATE);
+        } else {
+            current_global_event.value.self = object_next();
+        }
+        if (!current_global_event.value.self) {
+            current_global_event.type = MNCL_EVENT_POSTUPDATE;
+        }
         break;
     case MNCL_EVENT_POSTUPDATE:
-        mncl_begin_frame();
-        current_global_event.type = MNCL_EVENT_PRERENDER;
+        if (!current_global_event.value.self) {
+            current_global_event.value.self = object_begin(MNCL_EVENT_POSTUPDATE);
+        } else {
+            current_global_event.value.self = object_next();
+        }
+        if (!current_global_event.value.self) {
+            default_update_all_objects();
+            mncl_begin_frame();
+            current_global_event.type = MNCL_EVENT_PRERENDER;
+        }
         break;
     case MNCL_EVENT_PRERENDER:
         current_global_event.type = MNCL_EVENT_RENDER;
+        current_global_event.value.self = NULL;
         break;
     case MNCL_EVENT_RENDER:
-        current_global_event.type = MNCL_EVENT_POSTRENDER;
+        /* TODO: This should be part of a scene sort */
+        if (!current_global_event.value.self) {
+            current_global_event.value.self = object_begin(MNCL_EVENT_RENDER);
+        } else {
+            current_global_event.value.self = object_next();
+        }
+        if (!current_global_event.value.self) {
+            /* TODO: This is a flagrant stopgap */
+            default_render_all_objects();
+            current_global_event.type = MNCL_EVENT_POSTRENDER;
+        }
         break;
     case MNCL_EVENT_POSTRENDER:
     {

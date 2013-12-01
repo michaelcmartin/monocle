@@ -15,7 +15,8 @@ mncl_init(void)
         printf("Could not open audio: %s\n", Mix_GetError());
     }
     Mix_AllocateChannels(4);
-    Mix_Volume(-1, 128);    
+    Mix_Volume(-1, 128);
+    initialize_object_trees();
 }
 
 void

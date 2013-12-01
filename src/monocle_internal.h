@@ -40,6 +40,13 @@ void mncl_free_sfx(MNCL_SFX *sfx);
 /* Music */
 void mncl_play_music_file(const char *pathname, int fade_in_ms);
 
+/* Objects */
+void initialize_object_trees(void);
+MNCL_OBJECT *object_begin(MNCL_EVENT_TYPE which);
+MNCL_OBJECT *object_next(void);
+void default_update_all_objects(void);
+void default_render_all_objects(void);
+
 #ifdef __cplusplus
 }
 #endif
