@@ -3,11 +3,6 @@
 #include <SDL.h>
 #include "monocle.h"
 
-struct globe {
-    int x, y, dx, dy, frame;
-};
-
-struct globe globes[16];
 MNCL_SPRITE *earth;
 
 void
@@ -28,35 +23,21 @@ instructions(void)
 }
 
 void
-update(void)
+update(MNCL_OBJECT *obj)
 {
-    int i;
-    for (i = 0; i < 16; ++i) {
-        globes[i].x += globes[i].dx;
-        globes[i].y += globes[i].dy;
-        if (globes[i].x < 0) {
-            globes[i].x = 0; globes[i].dx = -globes[i].dx;
-        }
-        if (globes[i].y < 0) {
-            globes[i].y = 0; globes[i].dy = -globes[i].dy;
-        }
-        if (globes[i].x > 704) {
-            globes[i].x = 704; globes[i].dx = -globes[i].dx;
-        }
-        if (globes[i].y > 416) {
-            globes[i].y = 416; globes[i].dy = -globes[i].dy;
-        }
-        globes[i].frame = (globes[i].frame + 1) % 30;
+    float newx = obj->x + obj->dx;
+    float newy = obj->y + obj->dy;
+    if (newx < 0) {
+        obj->x = obj->dx; obj->dx = -obj->dx;
     }
-}
-
-void
-render(void)
-{
-    int i;
-    mncl_draw_rect(256, 112, 256, 256, 128, 128, 128);
-    for (i = 0; i < 16; ++i) {
-        mncl_draw_sprite(earth, globes[i].x, globes[i].y, globes[i].frame);
+    if (newy < 0) {
+        obj->y = obj->dy; obj->dy = -obj->dy;
+    }
+    if (newx > 704) {
+        obj->x = 704 + obj->dx; obj->dx = -obj->dx;
+    }
+    if (newy > 416) {
+        obj->y = 416 + obj->dy; obj->dy = -obj->dy;
     }
 }
 
@@ -66,14 +47,6 @@ main(int argc, char **argv)
     MNCL_SFX *sfx;
     int done, i, countdown, music_on, bg, music_volume;
 
-    for (i = 0; i < 16; ++i) {
-        globes[i].x = rand() % (768 - 64);
-        globes[i].y = rand() % (480 - 64);
-        globes[i].dx = (rand() % 5 + 1) * ((rand() % 2) ? 1 : -1);
-        globes[i].dy = (rand() % 5 + 1) * ((rand() % 2) ? 1 : -1);
-        globes[i].frame = rand() % 30;
-    }
-
     mncl_init();
     mncl_config_video("Earthball Demo", 768, 480, 0, 0);
     mncl_add_resource_zipfile("earthball-res.zip");
@@ -82,6 +55,17 @@ main(int argc, char **argv)
     earth = mncl_sprite_resource("earth");
     sfx = mncl_sfx_resource("sfx");
     mncl_play_music_resource("bgm", 2000);
+
+    for (i = 0; i < 16; ++i) {
+        MNCL_OBJECT *obj = mncl_create_object();
+        obj->x = rand() % (768 - 64);
+        obj->y = rand() % (480 - 64);
+        obj->dx = (rand() % 5 + 1) * ((rand() % 2) ? 1 : -1);
+        obj->dy = (rand() % 5 + 1) * ((rand() % 2) ? 1 : -1);
+        obj->df = 1;
+        obj->f = rand() % 30;
+        obj->sprite = earth;
+    }
 
     done = 0;
     countdown = 0;
@@ -148,15 +132,18 @@ main(int argc, char **argv)
             }
             break;
         case MNCL_EVENT_UPDATE:
-            update();
-            if (countdown > 0) {
+            if (e->value.self) {
+                update(e->value.self);
+            } else if (countdown > 0) {
                 if (--countdown == 0) {
                     done = 1;
                 }
             }
             break;
         case MNCL_EVENT_RENDER:
-            render();
+            if (!e->value.self) {
+                mncl_draw_rect(256, 112, 256, 256, 128, 128, 128);
+            }
             break;
         default:
             break;

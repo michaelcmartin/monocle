@@ -26,13 +26,13 @@ lib/libmonocle.a: lib $(OBJS)
 	ar cr lib/libmonocle.a $(OBJS)
 
 bin/$(MONOCLEBIN): bin $(OBJS)
-	gcc -o bin/$(MONOCLEBIN) -shared $(CFLAGS) $(OSLDFLAGS) -fvisibility-inlines-hidden $(OBJS) $(MONOCLELIBS) -lSDL2_mixer -lSDL2_image -lz
+	gcc -o bin/$(MONOCLEBIN) -shared $(CFLAGS) $(OSLDFLAGS) -fvisibility-inlines-hidden $(OBJS) $(MONOCLELIBS) -lSDL2_mixer -lSDL2_image -lz -lm
 
 bin/earthball: bin/$(MONOCLEBIN) demo/earthball.c bin/earthball-res.zip
 	gcc -o bin/earthball $(CFLAGS) demo/earthball.c $(DEMOLDFLAGS)
 
 bin/rawtest: bin/$(MONOCLEBIN) demo/rawtest.c
-	cp demo/resources/rawtest.zip demo/resources/shadow.txt bin/ && gcc -o bin/rawtest $(CFLAGS) demo/rawtest.c $(DEMOLDFLAGS)
+	cp demo/resources/rawtest.zip demo/resources/shadow.txt demo/resources/rawtest.json bin/ && gcc -o bin/rawtest $(CFLAGS) demo/rawtest.c $(DEMOLDFLAGS)
 
 bin/jsontest: demo/json-test.c src/json.c src/tree.c src/tree.h
 	gcc -o bin/jsontest $(CFLAGSNOSDL) demo/json-test.c src/tree.c
@@ -56,11 +56,12 @@ $(OBJS): %.o: %.c
 	gcc -o $@ -c $(CFLAGS) $(OSCFLAGS) -DMONOCLE_EXPORTS $<
 # DO NOT DELETE
 
-src/audio.o: include/monocle.h
-src/event.o: include/monocle.h
+src/audio.o: src/monocle_internal.h include/monocle.h
+src/event.o: include/monocle.h src/monocle_internal.h
 src/framebuffer.o: include/monocle.h src/monocle_internal.h
 src/json.o: include/monocle.h
 src/meta.o: include/monocle.h src/monocle_internal.h
+src/object.o: include/monocle.h src/monocle_internal.h src/tree.h
 src/raw_data.o: include/monocle.h src/tree.h
 src/resource.o: include/monocle.h src/monocle_internal.h src/tree.h
 src/tree.o: src/tree.h include/monocle.h

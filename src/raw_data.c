@@ -449,6 +449,10 @@ mncl_acquire_raw(const char *resource)
         }
         i = i->next;
     }
+    if (!result) {
+        /* Don't pollute our resource map */
+        return NULL;
+    }
     /* Update the resource map */
     found = malloc(sizeof(struct resmap_node));
     duped_name = (char *)malloc(strlen(resource)+1);

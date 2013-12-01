@@ -161,6 +161,8 @@ alloc_resource_type(const char *key, void *value, void *user)
             printf("WARNING: Could not store %s resource %s\n", rc->type, key);
             rc->values.deleter(val);
         }
+    } else {
+        printf ("WARNING: Could not handle %s resource %s\n", rc->type, key);
     }
 }
 
