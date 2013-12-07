@@ -28,9 +28,7 @@ _mncl = ffi.verify(
 
 
 class Monocle(object):
-
-    NULL = ffi.NULL
-    to_string = ffi.string
+    NULL = ffi.NULL  # TODO: Make this unnecessary.
 
     # Meta Component
 
@@ -48,111 +46,17 @@ class Monocle(object):
     def add_resource_zipfile(self, pathname):
         return _mncl.mncl_add_resource_zipfile(pathname)
 
-    def acquire_raw(self, resource_name):
-        return _mncl.mncl_acquire_raw(resource_name)
-
-    def release_raw(self, raw):
-        return _mncl.mncl_release_raw(raw)
-
-    # Accessors and decoders
-
-    def raw_size(self, raw):
-        return _mncl.mncl_raw_size(raw)
-
-    def raw_s8(self, raw, offset):
-        return _mncl.mncl_raw_s8(raw, offset)
-
-    def raw_u8(self, raw, offset):
-        return _mncl.mncl_raw_u8(raw, offset)
-
-    def raw_s16le(self, raw, offset):
-        return _mncl.mncl_raw_s16le(raw, offset)
-
-    def raw_s16be(self, raw, offset):
-        return _mncl.mncl_raw_s16be(raw, offset)
-
-    def raw_u16le(self, raw, offset):
-        return _mncl.mncl_raw_u16le(raw, offset)
-
-    def raw_u16be(self, raw, offset):
-        return _mncl.mncl_raw_u16be(raw, offset)
-
-    def raw_s32le(self, raw, offset):
-        return _mncl.mncl_raw_s32le(raw, offset)
-
-    def raw_s32be(self, raw, offset):
-        return _mncl.mncl_raw_s32be(raw, offset)
-
-    def raw_u32le(self, raw, offset):
-        return _mncl.mncl_raw_u32le(raw, offset)
-
-    def raw_u32be(self, raw, offset):
-        return _mncl.mncl_raw_u32be(raw, offset)
-
-    def raw_s64le(self, raw, offset):
-        return _mncl.mncl_raw_s64le(raw, offset)
-
-    def raw_s64be(self, raw, offset):
-        return _mncl.mncl_raw_s64be(raw, offset)
-
-    def raw_u64le(self, raw, offset):
-        return _mncl.mncl_raw_u64le(raw, offset)
-
-    def raw_u64be(self, raw, offset):
-        return _mncl.mncl_raw_u64be(raw, offset)
-
-    def raw_f32le(self, raw, offset):
-        return _mncl.mncl_raw_f32le(raw, offset)
-
-    def raw_f32be(self, raw, offset):
-        return _mncl.mncl_raw_f32be(raw, offset)
-
-    def raw_f64le(self, raw, offset):
-        return _mncl.mncl_raw_f64le(raw, offset)
-
-    def raw_f64be(self, raw, offset):
-        return _mncl.mncl_raw_f64be(raw, offset)
-
-    # Key-value map component
-
-    def alloc_kv(self, deleter):
-        return _mncl.mncl_alloc_kv(deleter)
-
-    def free_kv(self, kv):
-        return _mncl.mncl_free_kv(kv)
-
-    def kv_insert(self, kv, key, value):
-        return _mncl.mncl_kv_insert(kv, key, value)
-
-    def kv_delete(self, kv, key):
-        return _mncl.mncl_kv_delete(kv, key)
-
-    def kv_foreach(self, kv, fn, user):
-        return _mncl.mncl_kv_foreach(kv, fn, user)
+    def raw_resource(self, resource):
+        mncl_raw = _mncl.mncl_raw_resource(resource)
+        if mncl_raw == ffi.NULL:
+            # TODO: Throw exception here?
+            return None
+        return ffi.buffer(mncl_raw.data, mncl_raw.size)
 
     # Semi-structured data component
 
-    MNCL_DATA_NULL = _mncl.MNCL_DATA_NULL
-    MNCL_DATA_BOOLEAN = _mncl.MNCL_DATA_BOOLEAN
-    MNCL_DATA_NUMBER = _mncl.MNCL_DATA_NUMBER
-    MNCL_DATA_STRING = _mncl.MNCL_DATA_STRING
-    MNCL_DATA_ARRAY = _mncl.MNCL_DATA_ARRAY
-    MNCL_DATA_OBJECT = _mncl.MNCL_DATA_OBJECT
-
-    def parse_data(self, data, size):
-        return _mncl.mncl_parse_data(data, size)
-
-    def data_clone(self, src):
-        return _mncl.mncl_data_clone(src)
-
-    def free_data(self, mncl_data):
-        return _mncl.mncl_free_data(mncl_data)
-
-    def data_error(self):
-        return _mncl.mncl_data_error()
-
-    def data_lookup(self, map, key):
-        return _mncl.mncl_data_lookup(map, key)
+    def data_resource(self, resource):
+        return MonocleData(_mncl.mncl_data_resource(resource))
 
     # Framebuffer component
 
@@ -182,20 +86,19 @@ class Monocle(object):
 
     # Spritesheet Component
 
-    def alloc_spritesheet(self, resource_name):
-        return _mncl.mncl_alloc_spritesheet(resource_name)
-
-    def free_spritesheet(self, spritesheet):
-        return _mncl.mncl_free_spritesheet(spritesheet)
+    def spritesheet_resource(self, resource):
+        # TODO: Wrap this in a higher-level object?
+        return _mncl.mncl_spritesheet_resource(resource)
 
     def draw_from_spritesheet(self, spritesheet, x, y, my_x, my_y, my_w, my_h):
+        # TODO: Make this a method on the higher-level object mentioned above?
         return _mncl.mncl_draw_from_spritesheet(
             spritesheet, x, y, my_x, my_y, my_w, my_h)
 
     # Music Component
 
-    def play_music_file(self, pathname, fade_in_ms):
-        return _mncl.mncl_play_music_file(pathname, fade_in_ms)
+    def play_music_resource(self, resource, fade_in_ms):
+        return _mncl.mncl_play_music_resource(resource, fade_in_ms)
 
     def stop_music(self):
         return _mncl.mncl_stop_music()
@@ -214,14 +117,23 @@ class Monocle(object):
 
     # SFX Component
 
-    def alloc_sfx(self, resource_name):
-        return _mncl.mncl_alloc_sfx(resource_name)
-
-    def free_sfx(self, sfx):
-        return _mncl.mncl_free_sfx(sfx)
+    def sfx_resource(self, resource):
+        # TODO: Wrap this in a higher-level object?
+        return _mncl.mncl_sfx_resource(resource)
 
     def play_sfx(self, sfx, volume):
+        # TODO: Make this a method on the higher-level object mentioned above?
         return _mncl.mncl_play_sfx(sfx, volume)
+
+    # Sprite component
+
+    def sprite_resource(self, resource):
+        return MonocleSprite(_mncl.mncl_sprite_resource(resource))
+
+    # Object component
+
+    def create_object(self):
+        return MonocleObject(_mncl.mncl_create_object())
 
     # Event component
 
@@ -246,6 +158,7 @@ class Monocle(object):
     MNCL_NUM_EVENTS = _mncl.MNCL_NUM_EVENTS
 
     def pop_global_event(self):
+        # TODO: Wrap this in a higher-level object.
         return _mncl.mncl_pop_global_event()
 
     def event_type(self, evt):
@@ -260,18 +173,6 @@ class Monocle(object):
     # int mncl_event_joy_index(MNCL_EVENT *evt);
     # int mncl_event_joy_value(MNCL_EVENT *evt);
 
-    # Sprite component. Everything but mncl_draw_sprite may eventually be
-    # internalized.
-
-    # def alloc_sprite(self, nframes):
-    #     return _mncl.mncl_alloc_sprite(nframes)
-
-    # def free_sprite(self, sprite):
-    #     return _mncl.mncl_free_sprite(sprite)
-
-    # def draw_sprite(self, s, x, y, frame):
-    #     return _mncl.mncl_draw_sprite(s, x, y, frame)
-
     # Resource component
 
     def load_resmap(self, path):
@@ -283,46 +184,57 @@ class Monocle(object):
     def unload_all_resources(self):
         return _mncl.mncl_unload_all_resources()
 
-    def raw_resource(self, resource):
-        return _mncl.mncl_raw_resource(resource)
 
-    def spritesheet_resource(self, resource):
-        return _mncl.mncl_spritesheet_resource(resource)
+class MonocleData(object):
+    def __init__(self, mncl_data):
+        self._mncl_data = mncl_data
+        if self._mncl_data == ffi.NULL:
+            self.value = None
+        else:
+            self._parse_value()
 
-    def sprite_resource(self, resource):
-        return MonocleSprite(_mncl.mncl_sprite_resource(resource))
-
-    # def sprite_resource(self, resource):
-    #     return _mncl.mncl_sprite_resource(resource)
-
-    def sfx_resource(self, resource):
-        return _mncl.mncl_sfx_resource(resource)
-
-    def data_resource(self, resource):
-        return _mncl.mncl_data_resource(resource)
-
-    def play_music_resource(self, resource, fade_in_ms):
-        return _mncl.mncl_play_music_resource(resource, fade_in_ms)
+    def _parse_value(self):
+        data = self._mncl_data
+        if data.tag == _mncl.MNCL_DATA_BOOLEAN:
+            self.value = data.value.boolean
+        elif data.tag == _mncl.MNCL_DATA_NUMBER:
+            self.value = data.value.number
+        elif data.tag == _mncl.MNCL_DATA_STRING:
+            self.value = ffi.string(data.value.string)
+        elif data.tag == _mncl.MNCL_DATA_ARRAY:
+            self.value = []
+            for i in range(data.value.array.size):
+                self.value.append(MonocleData(data.value.array.data[i]))
+        elif data.tag == _mncl.MNCL_DATA_OBJECT:
+            raise NotImplementedError("Sorry, I haven't built this yet.")
 
 
 class MonocleSprite(object):
     def __init__(self, mncl_sprite):
         self._mncl_sprite = mncl_sprite
 
-    def free(self):
-        _mncl.mncl_free_sprite(self._mncl_sprite)
-        self._mncl_sprite = None
-
     def draw(self, x, y, frame):
         _mncl.mncl_draw_sprite(self._mncl_sprite, x, y, frame)
 
 
-for name in [
-        'w', 'h', 'hot_x', 'hot_y', 'hit_x', 'hit_y', 'hit_w', 'hit_h',
-        'nframes']:
-    def _attr(self, name=name):
-        return getattr(self._mncl_sprite, name)
-    setattr(MonocleSprite, name, property(_attr))
+class MonocleObject(object):
+    def __init__(self, mncl_object):
+        self._mncl_object = mncl_object
+
+    def set_sprite(self, sprite):
+        # TODO: Wrap this properly.
+        self._mncl_object.sprite = sprite._mncl_sprite
+
+
+def _add_mncl_obj_prop(name):
+    prop = property(
+        lambda self: getattr(self._mncl_object, name),
+        lambda self, value: setattr(self._mncl_object, name, value))
+    setattr(MonocleObject, name, prop)
+
+
+for name in ['x', 'y', 'f', 'dx', 'dy', 'df']:
+    _add_mncl_obj_prop(name)
 
 
 class Keycodes(object):
