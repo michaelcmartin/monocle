@@ -8,8 +8,6 @@ extern "C" {
 #endif
 
 /* Raw */
-MNCL_RAW *mncl_acquire_raw(const char *resource_name);
-void mncl_release_raw(MNCL_RAW *raw);
 void mncl_uninit_raw_system(void);
 
 /* Spritesheets */
