@@ -174,6 +174,9 @@ typedef struct struct_MNCL_OBJECT {
     float dx, dy, df;
     /* Which graphic is used to render or collision check */
     MNCL_SPRITE *sprite;
+    /* Information provided by the client to associate with this
+     * object. Monocle itself will never touch this data. */
+    void *user_data;
 } MNCL_OBJECT;
 
 extern MONOCULAR MNCL_OBJECT *mncl_create_object(void);
