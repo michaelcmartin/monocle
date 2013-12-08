@@ -61,7 +61,7 @@ mncl_create_object(void)
         node->obj = obj;
         node2->obj = obj;
         tree_insert(&master, (TREE_NODE *)node, objcmp);
-        tree_insert(&subscribed[MNCL_EVENT_UPDATE], (TREE_NODE *)node2, objcmp);
+        tree_insert(&subscribed[MNCL_EVENT_PRERENDER], (TREE_NODE *)node2, objcmp);
     } else {
         if (obj) {
             free(obj);

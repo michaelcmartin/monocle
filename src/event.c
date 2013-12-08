@@ -58,7 +58,7 @@ mncl_event_joy_value(MNCL_EVENT *evt)
 }
 
 static Uint32 target_time = 0;
-static MNCL_EVENT current_global_event = { MNCL_EVENT_FRAMEBOUNDARY, 0, { 0 } };
+static MNCL_EVENT current_global_event = { MNCL_EVENT_INIT, 0, { 0 } };
 
 MNCL_EVENT *
 mncl_pop_global_event(void)
@@ -70,9 +70,9 @@ mncl_pop_global_event(void)
     case MNCL_EVENT_QUIT:
         /* Once we've quit, we stay quit */
         break;
-    case MNCL_EVENT_PREUPDATE:
+    case MNCL_EVENT_PREINPUT:
         if (!current_global_event.value.self) {
-            current_global_event.value.self = object_begin(MNCL_EVENT_PREUPDATE);
+            current_global_event.value.self = object_begin(MNCL_EVENT_PREINPUT);
         } else {
             current_global_event.value.self = object_next();
         }
@@ -153,37 +153,34 @@ mncl_pop_global_event(void)
                 }
             } else {
                 /* No events left! */
-                current_global_event.type = MNCL_EVENT_UPDATE;
+                current_global_event.type = MNCL_EVENT_PREPHYSICS;
                 current_global_event.value.self = NULL;
                 break;
             }
         }
         break;
-    case MNCL_EVENT_UPDATE:
+    case MNCL_EVENT_PREPHYSICS:
         if (!current_global_event.value.self) {
-            current_global_event.value.self = object_begin(MNCL_EVENT_UPDATE);
-        } else {
-            current_global_event.value.self = object_next();
-        }
-        if (!current_global_event.value.self) {
-            current_global_event.type = MNCL_EVENT_POSTUPDATE;
-        }
-        break;
-    case MNCL_EVENT_POSTUPDATE:
-        if (!current_global_event.value.self) {
-            current_global_event.value.self = object_begin(MNCL_EVENT_POSTUPDATE);
+            current_global_event.value.self = object_begin(MNCL_EVENT_PREPHYSICS);
         } else {
             current_global_event.value.self = object_next();
         }
         if (!current_global_event.value.self) {
             default_update_all_objects();
-            mncl_begin_frame();
+            /* TODO: find collisions now that the update has happened */
             current_global_event.type = MNCL_EVENT_PRERENDER;
         }
         break;
     case MNCL_EVENT_PRERENDER:
-        current_global_event.type = MNCL_EVENT_RENDER;
-        current_global_event.value.self = NULL;
+        if (!current_global_event.value.self) {
+            current_global_event.value.self = object_begin(MNCL_EVENT_PRERENDER);
+        } else {
+            current_global_event.value.self = object_next();
+        }
+        if (!current_global_event.value.self) {
+            mncl_begin_frame();
+            current_global_event.type = MNCL_EVENT_RENDER;
+        }
         break;
     case MNCL_EVENT_RENDER:
         /* TODO: This should be part of a scene sort */
@@ -203,7 +200,7 @@ mncl_pop_global_event(void)
         Uint32 current_time;
             
         mncl_end_frame(); /* Should only happen the first time */
-        current_global_event.type = MNCL_EVENT_FRAMEBOUNDARY;
+        current_global_event.type = MNCL_EVENT_PREINPUT;
         current_time = SDL_GetTicks();
         if (current_time < target_time) {
             Uint32 wait_time = target_time - current_time;
@@ -217,10 +214,9 @@ mncl_pop_global_event(void)
         target_time = SDL_GetTicks() + 40;
         break;
     }
-    case MNCL_EVENT_FRAMEBOUNDARY:
-        /* TODO: Do we need a "frame boundary" event? We ought to be
-         *       able to kick over directly to PREUPDATE. */
-        current_global_event.type = MNCL_EVENT_PREUPDATE;
+    case MNCL_EVENT_INIT:
+        current_global_event.type = MNCL_EVENT_PREINPUT;
+        current_global_event.value.self = NULL;
         break;
     default:
         break;

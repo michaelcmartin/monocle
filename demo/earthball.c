@@ -28,16 +28,16 @@ update(MNCL_OBJECT *obj)
     float newx = obj->x + obj->dx;
     float newy = obj->y + obj->dy;
     if (newx < 0) {
-        obj->x = obj->dx; obj->dx = -obj->dx;
+        obj->x = 0; obj->dx = -obj->dx;
     }
     if (newy < 0) {
-        obj->y = obj->dy; obj->dy = -obj->dy;
+        obj->y = 0; obj->dy = -obj->dy;
     }
     if (newx > 704) {
-        obj->x = 704 + obj->dx; obj->dx = -obj->dx;
+        obj->x = 704; obj->dx = -obj->dx;
     }
     if (newy > 416) {
-        obj->y = 416 + obj->dy; obj->dy = -obj->dy;
+        obj->y = 416; obj->dy = -obj->dy;
     }
 }
 
@@ -131,7 +131,7 @@ main(int argc, char **argv)
                 break;
             }
             break;
-        case MNCL_EVENT_UPDATE:
+        case MNCL_EVENT_PRERENDER:
             if (e->value.self) {
                 update(e->value.self);
             } else if (countdown > 0) {
