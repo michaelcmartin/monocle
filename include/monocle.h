@@ -39,7 +39,13 @@ typedef struct struct_MNCL_RAW {
 extern MONOCULAR int mncl_add_resource_directory(const char *pathname);
 extern MONOCULAR int mncl_add_resource_zipfile(const char *pathname);
 
+/* For resources identified as "raw" in the resource map */
 extern MONOCULAR MNCL_RAW *mncl_raw_resource(const char *resource);
+
+/* For bypassing the resmap. Leaks if you don't release what you
+ * acquire! */
+extern MONOCULAR MNCL_RAW *mncl_acquire_raw(const char *resource_name);
+extern MONOCULAR void mncl_release_raw(MNCL_RAW *raw);
 
 /* Accessors and decoders */
 extern MONOCULAR int mncl_raw_size(MNCL_RAW *raw);
