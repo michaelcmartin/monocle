@@ -56,7 +56,7 @@ class Monocle(object):
     # Semi-structured data component
 
     def data_resource(self, resource):
-        return MonocleData(_mncl.mncl_data_resource(resource))
+        return _parse_monocle_data(_mncl.mncl_data_resource(resource))
 
     # Framebuffer component
 
@@ -185,28 +185,23 @@ class Monocle(object):
         return _mncl.mncl_unload_all_resources()
 
 
-class MonocleData(object):
-    def __init__(self, mncl_data):
-        self._mncl_data = mncl_data
-        if self._mncl_data == ffi.NULL:
-            self.value = None
-        else:
-            self._parse_value()
-
-    def _parse_value(self):
-        data = self._mncl_data
-        if data.tag == _mncl.MNCL_DATA_BOOLEAN:
-            self.value = data.value.boolean
-        elif data.tag == _mncl.MNCL_DATA_NUMBER:
-            self.value = data.value.number
-        elif data.tag == _mncl.MNCL_DATA_STRING:
-            self.value = ffi.string(data.value.string)
-        elif data.tag == _mncl.MNCL_DATA_ARRAY:
-            self.value = []
-            for i in range(data.value.array.size):
-                self.value.append(MonocleData(data.value.array.data[i]))
-        elif data.tag == _mncl.MNCL_DATA_OBJECT:
-            raise NotImplementedError("Sorry, I haven't built this yet.")
+def _parse_monocle_data(mncl_data):
+    if mncl_data == ffi.NULL:
+        return None
+    if mncl_data.tag == _mncl.MNCL_DATA_BOOLEAN:
+        return mncl_data.value.boolean
+    if mncl_data.tag == _mncl.MNCL_DATA_NUMBER:
+        return mncl_data.value.number
+    if mncl_data.tag == _mncl.MNCL_DATA_STRING:
+        return ffi.string(mncl_data.value.string)
+    if mncl_data.tag == _mncl.MNCL_DATA_ARRAY:
+        value = []
+        for i in range(mncl_data.value.array.size):
+            value.append(_parse_monocle_data(mncl_data.value.array.data[i]))
+        return value
+    if mncl_data.tag == _mncl.MNCL_DATA_OBJECT:
+        raise NotImplementedError("Sorry, I haven't built this yet.")
+    raise ValueError("Unknown MNCL_DATA_TYPE: %s" % mncl_data.tag)
 
 
 class MonocleSprite(object):

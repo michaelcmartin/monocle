@@ -48,13 +48,10 @@ class EarthBall(object):
 
     def instructions(self):
         insts = mncl.data_resource("instructions")
-        if insts.value:
+        if insts:
             print "Instructions:"
-            for val in insts.value:
-                if isinstance(val.value, basestring):
-                    print "    %s" % val.value
-                else:
-                    print "    (invalid datum)"
+            for line in insts:
+                print "    %s" % line
         else:
             print "No instructions available"
 
@@ -135,13 +132,22 @@ class EarthBall(object):
                     mncl.play_sfx(self.sfx, 64)
 
             elif e.type == mncl.MNCL_EVENT_UPDATE:
-                self.update()
-                if countdown > 0:
-                    countdown -= 1
-                    if countdown == 0:
-                        done = True
+                # NOTE: We get one of these events for each object and one for
+                # a NULL object which is for global updates. Since we don't
+                # have a good way of looking up the appropriate Python object
+                # for a MNCL_OBJECT* yet (that's happening in a Monocle API
+                # update soon) we just ignore all non-NULL objects and manually
+                # call update for each Globe when we see the global update
+                # event.
+                if e.value.self == mncl.NULL:
+                    self.update()
+                    if countdown > 0:
+                        countdown -= 1
+                        if countdown == 0:
+                            done = True
 
             elif e.type == mncl.MNCL_EVENT_RENDER:
+                # Note: See the note for the MNCL_EVENT_UPDATE handler.
                 if e.value.self == mncl.NULL:
                     self.render()
 
