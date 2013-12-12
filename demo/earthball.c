@@ -3,8 +3,6 @@
 #include <SDL.h>
 #include "monocle.h"
 
-MNCL_SPRITE *earth;
-
 void
 instructions(void)
 {
@@ -52,19 +50,14 @@ main(int argc, char **argv)
     mncl_add_resource_zipfile("earthball-res.zip");
 
     mncl_load_resmap("earthball.json");
-    earth = mncl_sprite_resource("earth");
     sfx = mncl_sfx_resource("sfx");
     mncl_play_music_resource("bgm", 2000);
 
     for (i = 0; i < 16; ++i) {
-        MNCL_OBJECT *obj = mncl_create_object();
-        obj->x = rand() % (768 - 64);
-        obj->y = rand() % (480 - 64);
+        MNCL_OBJECT *obj = mncl_create_object(rand() % (768 - 64), rand() % (480 - 64), "earth");
         obj->dx = (rand() % 5 + 1) * ((rand() % 2) ? 1 : -1);
         obj->dy = (rand() % 5 + 1) * ((rand() % 2) ? 1 : -1);
-        obj->df = 1;
         obj->f = rand() % 30;
-        obj->sprite = earth;
     }
 
     done = 0;

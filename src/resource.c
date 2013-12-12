@@ -138,14 +138,152 @@ data_alloc(MNCL_DATA *arg)
     return mncl_data_clone(arg);
 }
 
+static void *
+kind_alloc(MNCL_DATA *arg)
+{
+    MNCL_KIND *result = NULL;
+    int trait_count;
+    unsigned int invisible, customrender;
+    if (arg && arg->tag == MNCL_DATA_OBJECT) {
+        result = malloc(sizeof(MNCL_KIND));
+        if (result) {
+            MNCL_DATA *v;
+            /* Set some defaults */
+            result->dx = 0;
+            result->dy = 0;
+            result->df = 1;
+            result->sprite = NULL;
+            result->visible = 1;
+            result->customrender = 0;
+            /* Fill in the optional overrides */
+            v = mncl_data_lookup(arg, "dx");
+            if (v && v->tag == MNCL_DATA_NUMBER) {
+                result->dx = (float)v->value.number;
+            }
+            v = mncl_data_lookup(arg, "dy");
+            if (v && v->tag == MNCL_DATA_NUMBER) {
+                result->dy = (float)v->value.number;
+            }
+            v = mncl_data_lookup(arg, "frame-speed");
+            if (v && v->tag == MNCL_DATA_NUMBER) {
+                result->df = (float)v->value.number;
+            }
+            v = mncl_data_lookup(arg, "depth");
+            if (v && v->tag == MNCL_DATA_NUMBER) {
+                result->depth = (float)v->value.number;
+            }
+            v = mncl_data_lookup(arg, "sprite");
+            if (v && v->tag == MNCL_DATA_STRING) {
+                MNCL_SPRITE *s = mncl_sprite_resource(v->value.string);
+                if (!s) {
+                    printf("WARNING: Kind specifies unknown sprite '%s'\n", v->value.string);
+                }
+                result->sprite = s;
+            }
+            /* Now for the fun part: lists of traits */
+            trait_count = 1; /* Start with just the terminator */
+            invisible = mncl_get_trait("invisible");
+            customrender = mncl_get_trait("render");
+            v = mncl_data_lookup(arg, "traits");
+            if (v && v->tag == MNCL_DATA_ARRAY) {
+                int i;
+                for (i = 0; i < v->value.array.size; ++i) {
+                    MNCL_DATA *t = v->value.array.data[i];
+                    if (t && t->tag == MNCL_DATA_STRING) {
+                        unsigned int t_id = mncl_get_trait(t->value.string);
+                        if (t_id != invisible && t_id != customrender) {
+                            ++trait_count;
+                        }
+                    }
+                }
+            }
+            result->traits = (unsigned int *)malloc(sizeof(unsigned int) * trait_count);
+            if (result->traits) {
+                int i;
+                trait_count = 0;
+                if (v && v->tag == MNCL_DATA_ARRAY) {
+                    for (i = 0; i < v->value.array.size; ++i) {
+                        MNCL_DATA *t = v->value.array.data[i];
+                        if (t && t->tag == MNCL_DATA_STRING) {
+                            unsigned int t_id = mncl_get_trait(t->value.string);
+                            if (t_id == invisible) {
+                                result->visible = 0;
+                            } else if (t_id == customrender) {
+                                result->customrender = 1;
+                            } else {
+                                result->traits[trait_count++] = t_id;
+                            }
+                        } else {
+                            printf("WARNING: Traits need to be strings");
+                        }
+                    }
+                }
+                result->traits[trait_count] = 0; /* Set the terminator */
+            } else {
+                printf("ERROR: Could not allocate the trait array!\n");
+                free (result);
+                return NULL;
+            }
+            trait_count = 1; /* Start with just the terminator */
+            v = mncl_data_lookup(arg, "collisions");
+            if (v && v->tag == MNCL_DATA_ARRAY) {
+                int i;
+                for (i = 0; i < v->value.array.size; ++i) {
+                    MNCL_DATA *t = v->value.array.data[i];
+                    if (t && t->tag == MNCL_DATA_STRING) {
+                        ++trait_count;
+                    }
+                }
+            }
+            result->collisions = (unsigned int *)malloc(sizeof(unsigned int) * trait_count);
+            if (result->collisions) {
+                int i;
+                trait_count = 0;
+                if (v && v->tag == MNCL_DATA_ARRAY) {
+                    for (i = 0; i < v->value.array.size; ++i) {
+                        MNCL_DATA *t = v->value.array.data[i];
+                        if (t && t->tag == MNCL_DATA_STRING) {
+                            result->traits[trait_count++] = mncl_get_trait(t->value.string);
+                        } else {
+                            printf("WARNING: Collisions need to be strings");
+                        }
+                    }
+                }
+                result->traits[trait_count] = 0; /* Set the terminator */
+            } else {
+                printf("ERROR: Could not allocate the collisions array!\n");
+                free (result->traits);
+                free (result);
+                return NULL;
+            }
+        }
+    }
+    return result;
+}
+
+static void
+mncl_free_kind(void *obj) {
+    MNCL_KIND *kind = (MNCL_KIND *)obj;
+    if (kind) {
+        if (kind->traits) {
+            free(kind->traits);
+        }
+        if (kind->collisions) {
+            free(kind->collisions);
+        }
+        free(kind);
+    }
+}
+
 static RES_CLASS raw = { { { NULL }, (MNCL_KV_DELETER)mncl_release_raw }, "raw", raw_alloc };
 static RES_CLASS spritesheet = { { { NULL }, (MNCL_KV_DELETER)mncl_free_spritesheet }, "spritesheet", spritesheet_alloc };
 static RES_CLASS sprite = { { { NULL }, (MNCL_KV_DELETER)mncl_free_sprite },  "sprite", sprite_alloc };
 static RES_CLASS sfx = { { { NULL }, (MNCL_KV_DELETER)mncl_free_sfx }, "sfx", sfx_alloc };
 static RES_CLASS music = { { { NULL }, free }, "music", music_alloc };
 static RES_CLASS data = { { { NULL }, (MNCL_KV_DELETER)mncl_free_data }, "data", data_alloc };
+static RES_CLASS kind = { { { NULL }, (MNCL_KV_DELETER)mncl_free_kind }, "kind", kind_alloc };
 
-static RES_CLASS *resclasses[] = { &raw, &spritesheet, &sprite, &sfx, &music, &data, NULL };
+static RES_CLASS *resclasses[] = { &raw, &spritesheet, &sprite, &sfx, &music, &data, &kind, NULL };
 
 static void
 alloc_resource_type(const char *key, void *value, void *user)
@@ -238,6 +376,7 @@ mncl_unload_all_resources(void)
         tree_postorder(&(resclasses[i]->values.tree), (TREE_VISITOR)free);
         resclasses[i]->values.tree.root = NULL;
     }
+    mncl_uninit_traits();
 }
 
 /* Locators */
@@ -270,6 +409,12 @@ MNCL_DATA *
 mncl_data_resource(const char *resource)
 {
     return (MNCL_DATA *)mncl_kv_find(&data.values, resource);
+}
+
+MNCL_KIND *
+mncl_kind_resource(const char *resource)
+{
+    return (MNCL_KIND *)mncl_kv_find(&kind.values, resource);
 }
 
 void

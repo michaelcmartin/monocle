@@ -6,7 +6,7 @@
 typedef struct struct_mncl_object_full {
     MNCL_OBJECT object;
     int depth;
-    int visible;
+    MNCL_KIND *kind;
 } MNCL_OBJECT_FULL;
 
 typedef struct struct_mncl_object_node {
@@ -32,6 +32,12 @@ objcmp(TREE_NODE *a, TREE_NODE *b)
  * object contained therein. */
 static TREE master;
 
+/* Master list of traits. Traits are immortal. The first time we
+ * try to create or look up a trait, if this doesn't exist it will
+ * be populated with the default traits. */
+static MNCL_KV *traits = NULL;
+static intptr_t num_traits = 0;
+
 /* Subscription trees for individual events. Not all of these events
  * are subscribable, but this makes the enumerated types work more
  * readily. */
@@ -50,18 +56,63 @@ initialize_object_trees(void)
     }
 }
 
+static void
+ensure_basic_traits(void)
+{
+    if (!traits) {
+        traits = mncl_alloc_kv(NULL);
+        num_traits = 0;
+        mncl_kv_insert(traits, "invisible", (void *)++num_traits);
+        mncl_kv_insert(traits, "pre-input", (void *)++num_traits);
+        mncl_kv_insert(traits, "pre-physics", (void *)++num_traits);
+        mncl_kv_insert(traits, "pre-render", (void *)++num_traits);
+        mncl_kv_insert(traits, "render", (void *)++num_traits);
+    }
+}
+
+unsigned int
+mncl_get_trait(const char *trait)
+{
+    intptr_t result;
+    ensure_basic_traits();
+    result = (intptr_t)mncl_kv_find(traits, trait);
+    if (result) {
+        return (unsigned int)result;
+    }
+    mncl_kv_insert(traits, trait, (void *)++num_traits);
+    return num_traits;
+}
+
+void
+mncl_uninit_traits(void)
+{
+    mncl_free_kv(traits);
+    traits = NULL;
+    num_traits = 0;
+}
+
 MNCL_OBJECT *
-mncl_create_object(void)
+mncl_create_object(float x, float y, const char *kind)
 {
     MNCL_OBJECT_FULL *obj = malloc(sizeof(MNCL_OBJECT_FULL));
     MNCL_OBJECT_NODE *node = malloc(sizeof(MNCL_OBJECT_NODE));
     /* We actually need one of these per subscription, in the end. */
     MNCL_OBJECT_NODE *node2 = malloc(sizeof(MNCL_OBJECT_NODE));
-    if (obj && node && node2) {
+    MNCL_KIND *k = mncl_kind_resource(kind);
+    if (obj && node && node2 && k) {
         node->obj = obj;
         node2->obj = obj;
         tree_insert(&master, (TREE_NODE *)node, objcmp);
         tree_insert(&subscribed[MNCL_EVENT_PRERENDER], (TREE_NODE *)node2, objcmp);
+        obj->object.x = x;
+        obj->object.y = y;
+        obj->object.f = 0;
+        obj->object.dx = k->dx;
+        obj->object.dx = k->dy;
+        obj->object.df = k->df;
+        obj->object.sprite = k->sprite;
+        obj->depth = k->depth;
+        obj->kind = k;
     } else {
         if (obj) {
             free(obj);
