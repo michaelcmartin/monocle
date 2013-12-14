@@ -1,4 +1,4 @@
-from _monocle import ffi, mncl, remember_object
+from pymonocle._monocle import ffi, mncl, remember_object
 
 
 class MonocleObject(object):

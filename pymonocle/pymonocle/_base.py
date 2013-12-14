@@ -3,15 +3,6 @@ from pymonocle.constants import (
     DATA_NULL, DATA_BOOLEAN, DATA_NUMBER, DATA_STRING, DATA_ARRAY, DATA_OBJECT)
 
 
-# These things will hopefully go away once the wrapping is complete.
-
-NULL = ffi.NULL
-
-
-def get_pyobj(void_star):
-    return ffi.from_handle(void_star)
-
-
 # Meta Component
 
 def init():
@@ -34,7 +25,7 @@ def add_resource_zipfile(pathname):
 
 def raw_resource(resource):
     mncl_raw = mncl.mncl_raw_resource(resource)
-    if mncl_raw == NULL:
+    if mncl_raw == ffi.NULL:
         # TODO: Throw exception here?
         return None
     return ffi.buffer(mncl_raw.data, mncl_raw.size)
@@ -47,7 +38,10 @@ def data_resource(resource):
 
 
 def _parse_monocle_data(mncl_data):
-    if mncl_data == NULL or mncl_data.tag == DATA_NULL:
+    if mncl_data == ffi.NULL:
+        # TODO: Throw exception here?
+        return None
+    if mncl_data.tag == DATA_NULL:
         return None
     if mncl_data.tag == DATA_BOOLEAN:
         return mncl_data.value.boolean
@@ -173,26 +167,6 @@ class MonocleSprite(object):
 
     def draw(self, x, y, frame):
         mncl.mncl_draw_sprite(self._mncl_sprite, x, y, frame)
-
-
-# Event component
-
-def pop_global_event():
-    # TODO: Wrap this in a higher-level object.
-    return mncl.mncl_pop_global_event()
-
-
-def event_type(evt):
-    return mncl.mncl_event_type(evt)
-
-# int mncl_event_subscriber(MNCL_EVENT *evt);
-# int mncl_event_key(MNCL_EVENT *evt);
-# int mncl_event_mouse_x(MNCL_EVENT *evt);
-# int mncl_event_mouse_y(MNCL_EVENT *evt);
-# int mncl_event_mouse_button(MNCL_EVENT *evt);
-# int mncl_event_joy_stick(MNCL_EVENT *evt);
-# int mncl_event_joy_index(MNCL_EVENT *evt);
-# int mncl_event_joy_value(MNCL_EVENT *evt);
 
 
 # Resource component
