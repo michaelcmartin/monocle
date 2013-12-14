@@ -1,6 +1,6 @@
 from pymonocle._monocle import ffi, mncl
 from pymonocle.constants import (
-    DATA_BOOLEAN, DATA_NUMBER, DATA_STRING, DATA_ARRAY, DATA_OBJECT)
+    DATA_NULL, DATA_BOOLEAN, DATA_NUMBER, DATA_STRING, DATA_ARRAY, DATA_OBJECT)
 
 
 # These things will hopefully go away once the wrapping is complete.
@@ -47,7 +47,7 @@ def data_resource(resource):
 
 
 def _parse_monocle_data(mncl_data):
-    if mncl_data == NULL:
+    if mncl_data == NULL or mncl_data.tag == DATA_NULL:
         return None
     if mncl_data.tag == DATA_BOOLEAN:
         return mncl_data.value.boolean
@@ -61,8 +61,19 @@ def _parse_monocle_data(mncl_data):
             value.append(_parse_monocle_data(mncl_data.value.array.data[i]))
         return value
     if mncl_data.tag == DATA_OBJECT:
-        raise NotImplementedError("Sorry, I haven't built this yet.")
+        data_dict = {}
+        handle = ffi.new_handle(data_dict)
+        mncl.mncl_kv_foreach(
+            mncl_data.value.object, _parse_kv_value_fn, handle)
+        return data_dict
     raise ValueError("Unknown MNCL_DATA_TYPE: %s" % mncl_data.tag)
+
+
+@ffi.callback("MNCL_KV_VALUE_FN")
+def _parse_kv_value_fn(key, value, handle):
+    data_dict = ffi.from_handle(handle)
+    data_dict[ffi.string(key)] = _parse_monocle_data(
+        ffi.cast("MNCL_DATA*", value))
 
 
 # Framebuffer component
