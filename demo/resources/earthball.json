@@ -38,6 +38,10 @@
                               {"spritesheet": "earth", "x": 256, "y": 192},
                               {"spritesheet": "earth", "x": 320, "y": 192}]}
     },
+    "kind": {
+        "earth": { "sprite": "earth",
+                   "traits": ["pre-render"] }
+    },
     "data": {
         "instructions": ["B to change background color",
                          "P to pause/resume music",

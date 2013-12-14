@@ -58,14 +58,15 @@ mncl_alloc_kv(MNCL_KV_DELETER deleter)
 void
 mncl_free_kv(MNCL_KV *kv)
 {
-    TREE_NODE *node;
     if (!kv) {
         return;
     }
-    node = tree_minimum(&kv->tree);
-    while (node) {
-        kv->deleter(((KEY_VALUE_NODE *)node)->value);
-        node = tree_next(node);
+    if (kv->deleter) {
+        TREE_NODE *node = tree_minimum(&kv->tree);
+        while (node) {
+            kv->deleter(((KEY_VALUE_NODE *)node)->value);
+            node = tree_next(node);
+        }
     }
     tree_postorder (&kv->tree, (TREE_VISITOR)free);
     free(kv);
@@ -82,7 +83,9 @@ mncl_kv_insert(MNCL_KV *kv, const char *key, void *value)
     seek.key=key;
     result = (KEY_VALUE_NODE *)tree_find(&kv->tree, (TREE_NODE *)&seek, key_value_node_cmp);
     if (result) {
-        kv->deleter(result->value);
+        if (kv->deleter) {
+            kv->deleter(result->value);
+        }
         result->value = value;
     } else {
         result = key_value_node_alloc(key, value);
@@ -122,7 +125,9 @@ mncl_kv_delete(MNCL_KV *kv, const char *key)
     seek.key = key;
     result = (KEY_VALUE_NODE *)tree_find(&kv->tree, (TREE_NODE *)&seek, key_value_node_cmp);
     if (result) {
-        kv->deleter(result->value);
+        if (kv->deleter) {
+            kv->deleter(result->value);
+        }
         tree_delete(&kv->tree, (TREE_NODE *)result);
         free(result);
     }

@@ -38,6 +38,18 @@ void mncl_free_sfx(MNCL_SFX *sfx);
 /* Music */
 void mncl_play_music_file(const char *pathname, int fade_in_ms);
 
+/* Kinds and Traits */
+typedef struct struct_MNCL_KIND {
+    float f, dx, dy, df, depth;
+    int visible, customrender;
+    MNCL_SPRITE *sprite;
+    unsigned int *traits, *collisions;
+} MNCL_KIND;
+
+MNCL_KIND *mncl_kind_resource(const char *resource);
+unsigned int mncl_get_trait(const char *trait);
+void mncl_uninit_traits(void);
+
 /* Objects */
 void initialize_object_trees(void);
 MNCL_OBJECT *object_begin(MNCL_EVENT_TYPE which);

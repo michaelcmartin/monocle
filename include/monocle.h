@@ -179,7 +179,7 @@ typedef struct struct_MNCL_OBJECT {
     void *user_data;
 } MNCL_OBJECT;
 
-extern MONOCULAR MNCL_OBJECT *mncl_create_object(void);
+extern MONOCULAR MNCL_OBJECT *mncl_create_object(float x, float y, const char *kind);
 
 /* Event component */
 
