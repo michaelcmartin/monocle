@@ -7,16 +7,17 @@ from pymonocle.gameobject import MonocleObject
 
 
 class Globe(MonocleObject):
-    def __init__(self, x_max, y_max, sprite):
+    def __init__(self, x_max, y_max):
         width = height = 64
         nframes = 30
         self.x_max = x_max - width
         self.y_max = y_max - height
 
-        print sprite
-        self.set_sprite(sprite)
-        self.x = random.randint(0, self.x_max)
-        self.y = random.randint(0, self.y_max)
+        super(Globe, self).__init__(
+            random.randint(0, self.x_max),
+            random.randint(0, self.y_max),
+            'earth')
+
         self.f = random.choice(range(nframes))
         self.dx = random.randint(1, 5) * random.choice([-1, 1])
         self.dy = random.randint(1, 5) * random.choice([-1, 1])
@@ -29,17 +30,17 @@ class Globe(MonocleObject):
         newy = self.y + self.dy
 
         if newx < 0:
-            self.x = self.dx
+            self.x = 0
             self.dx = -self.dx
         elif newx > self.x_max:
-            self.x = self.x_max + self.dx
+            self.x = self.x_max
             self.dx = -self.dx
 
         if newy < 0:
-            self.y = self.dy
+            self.y = 0
             self.dy = -self.dy
         elif newy > self.y_max:
-            self.y = self.y_max + self.dy
+            self.y = self.y_max
             self.dy = -self.dy
 
 
@@ -69,11 +70,10 @@ class EarthBall(object):
         pymonocle.add_resource_zipfile("bin/earthball-res.zip")
 
         pymonocle.load_resmap("earthball.json")
-        self.earth = pymonocle.sprite_resource("earth")
         self.sfx = pymonocle.sfx_resource("sfx")
         pymonocle.play_music_resource("bgm", 2000)
 
-        self.globes = [Globe(768, 480, self.earth) for _ in xrange(16)]
+        self.globes = [Globe(768, 480) for _ in xrange(16)]
 
         done = False
         countdown = 0
