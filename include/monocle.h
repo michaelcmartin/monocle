@@ -206,21 +206,23 @@ typedef enum {
 
 typedef struct struct_MNCL_EVENT {
     MNCL_EVENT_TYPE type;
-    int subscriber;
     union {
         int key;
         struct { int x, y; } mousemove;
         int mousebutton;
         struct { int stick, index, value; } joystick;
         MNCL_OBJECT *self;
-        struct { MNCL_OBJECT *self, *other; } collision;
+        struct { 
+            MNCL_OBJECT *self, *other; 
+            const char *trait; 
+            int trait_id;
+        } collision;
     } value;
 } MNCL_EVENT;
 
 extern MONOCULAR MNCL_EVENT *mncl_pop_global_event(void);
 
 extern MONOCULAR MNCL_EVENT_TYPE mncl_event_type(MNCL_EVENT *evt);
-extern MONOCULAR int mncl_event_subscriber(MNCL_EVENT *evt);
 extern MONOCULAR int mncl_event_key(MNCL_EVENT *evt);
 extern MONOCULAR int mncl_event_mouse_x(MNCL_EVENT *evt);
 extern MONOCULAR int mncl_event_mouse_y(MNCL_EVENT *evt);
