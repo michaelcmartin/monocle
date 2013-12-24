@@ -243,13 +243,13 @@ kind_alloc(MNCL_DATA *arg)
                     for (i = 0; i < v->value.array.size; ++i) {
                         MNCL_DATA *t = v->value.array.data[i];
                         if (t && t->tag == MNCL_DATA_STRING) {
-                            result->traits[trait_count++] = mncl_get_trait(t->value.string);
+                            result->collisions[trait_count++] = mncl_get_trait(t->value.string);
                         } else {
                             printf("WARNING: Collisions need to be strings");
                         }
                     }
                 }
-                result->traits[trait_count] = 0; /* Set the terminator */
+                result->collisions[trait_count] = 0; /* Set the terminator */
             } else {
                 printf("ERROR: Could not allocate the collisions array!\n");
                 free (result->traits);
