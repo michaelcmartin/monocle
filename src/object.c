@@ -303,8 +303,11 @@ object_begin(MNCL_EVENT_TYPE which)
 MNCL_OBJECT *
 object_next(void)
 {
-    if (current_iter) {
+    while (current_iter) {
         current_iter = tree_next(current_iter);
+        if (!tree_find(&pending_destruction, current_iter, objcmp)) {
+            break;
+        }
     }
     if (current_iter) {
         return &((MNCL_OBJECT_NODE *)current_iter)->obj->object;
