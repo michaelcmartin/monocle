@@ -49,10 +49,10 @@ main(int argc, char **argv)
         TEST(mncl_raw_u32le, 6, 0xf03fbf80, "%u");
         TEST(mncl_raw_s32be, 6, (int32_t)(0x80bf3ff0), "%d");
         TEST(mncl_raw_s32le, 6, (int32_t)(0xf03fbf80), "%d");
-        TEST(mncl_raw_u64le, 15, 0x8472916872b02100LL, "%llu");
-        TEST(mncl_raw_s64le, 15, 0x8472916872b02100LL, "%lld");
-        TEST(mncl_raw_u64be, 1, 0xf6e979000080bf3fLL, "%llu");
-        TEST(mncl_raw_s64be, 1, 0xf6e979000080bf3fLL, "%lld");
+        TEST((long long unsigned int)mncl_raw_u64le, 15, 0x8472916872b02100LL, "%llu");
+        TEST((long long int)mncl_raw_s64le, 15, 0x8472916872b02100LL, "%lld");
+        TEST((long long unsigned int)mncl_raw_u64be, 1, 0xf6e979000080bf3fLL, "%llu");
+        TEST((long long int)mncl_raw_s64be, 1, 0xf6e979000080bf3fLL, "%lld");
         TEST(mncl_raw_f32be, 0, 0x1.edd2f2p+6, "%7.3f");
         TEST(mncl_raw_f32le, 4, -1.0, "%7.3f");
         TEST(mncl_raw_f64be, 8, 1.0, "%7.3f");

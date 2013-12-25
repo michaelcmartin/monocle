@@ -10,12 +10,6 @@ mncl_event_type(MNCL_EVENT *evt)
 }
 
 int
-mncl_event_subscriber(MNCL_EVENT *evt)
-{
-    return evt->subscriber;
-}
-
-int
 mncl_event_key(MNCL_EVENT *evt)
 {
     return evt->value.key;
@@ -58,7 +52,7 @@ mncl_event_joy_value(MNCL_EVENT *evt)
 }
 
 static Uint32 target_time = 0;
-static MNCL_EVENT current_global_event = { MNCL_EVENT_INIT, 0, { 0 } };
+static MNCL_EVENT current_global_event = { MNCL_EVENT_INIT, { 0 } };
 
 MNCL_EVENT *
 mncl_pop_global_event(void)
