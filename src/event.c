@@ -161,8 +161,22 @@ mncl_pop_global_event(void)
         }
         if (!current_global_event.value.self) {
             default_update_all_objects();
-            /* TODO: find collisions now that the update has happened */
+            /* There is no "null" collision event that clients ever
+             * see , so we have to do a little more bookkeeping on
+             * this one */
+            current_global_event.type = MNCL_EVENT_COLLISION;
+            collision_begin(&current_global_event.value.collision);
+            if (!current_global_event.value.collision.self) {
+                current_global_event.type = MNCL_EVENT_PRERENDER;
+                current_global_event.value.self = NULL;
+            }
+        }
+        break;
+    case MNCL_EVENT_COLLISION:
+        collision_next(&current_global_event.value.collision);
+        if (!current_global_event.value.collision.self) {
             current_global_event.type = MNCL_EVENT_PRERENDER;
+            current_global_event.value.self = NULL;
         }
         break;
     case MNCL_EVENT_PRERENDER:

@@ -204,6 +204,12 @@ typedef enum {
     MNCL_NUM_EVENTS
 } MNCL_EVENT_TYPE;
 
+typedef struct struct_MNCL_COLLISION {
+    MNCL_OBJECT *self, *other; 
+    const char *trait; 
+    int trait_id;
+} MNCL_COLLISION;
+
 typedef struct struct_MNCL_EVENT {
     MNCL_EVENT_TYPE type;
     union {
@@ -212,11 +218,7 @@ typedef struct struct_MNCL_EVENT {
         int mousebutton;
         struct { int stick, index, value; } joystick;
         MNCL_OBJECT *self;
-        struct { 
-            MNCL_OBJECT *self, *other; 
-            const char *trait; 
-            int trait_id;
-        } collision;
+        MNCL_COLLISION collision;
     } value;
 } MNCL_EVENT;
 
