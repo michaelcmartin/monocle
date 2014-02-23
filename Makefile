@@ -20,7 +20,7 @@ CFLAGS = $(shell sdl2-config --cflags) $(CFLAGSNOSDL)
 
 OBJS = $(patsubst %.c,%.o,$(wildcard src/*.c))
 
-all: dirs | lib/libmonocle.a bin/$(MONOCLEBIN) bin/earthball bin/rawtest bin/jsontest
+all: dirs | lib/libmonocle.a bin/$(MONOCLEBIN) bin/earthball bin/base_collide_test bin/rawtest bin/jsontest
 
 lib/libmonocle.a: lib $(OBJS)
 	ar cr lib/libmonocle.a $(OBJS)
@@ -30,6 +30,9 @@ bin/$(MONOCLEBIN): bin $(OBJS)
 
 bin/earthball: bin/$(MONOCLEBIN) demo/earthball.c bin/earthball-res.zip
 	gcc -o bin/earthball $(CFLAGS) demo/earthball.c $(DEMOLDFLAGS)
+
+bin/base_collide_test: bin/$(MONOCLEBIN) demo/base_collide_test.c bin/earthball-res.zip
+	gcc -o bin/base_collide_test $(CFLAGS) demo/base_collide_test.c $(DEMOLDFLAGS)
 
 bin/rawtest: bin/$(MONOCLEBIN) demo/rawtest.c
 	cp demo/resources/rawtest.zip demo/resources/shadow.txt demo/resources/rawtest.json bin/ && gcc -o bin/rawtest $(CFLAGS) demo/rawtest.c $(DEMOLDFLAGS)
