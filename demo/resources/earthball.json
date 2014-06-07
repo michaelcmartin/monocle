@@ -1,5 +1,6 @@
 {
-    "spritesheet": { "earth": "earth.png" },
+    "spritesheet": { "earth":     "earth.png",
+                     "monospace": "monospace.png" },
     "sfx": { "sfx": "torpedo.wav" },
     "music": { "bgm": "march.it" },
     "sprite": {
@@ -54,5 +55,16 @@
                          "UP and DOWN ARROW KEYS to change music volume",
                          "ESCAPE to quit with music fadeout",
                          "CLOSE WINDOW to quit immediately"]
+    },
+    "font": {
+        "monospace": { "spritesheet": "monospace",
+                       "width": 11,
+                       "height": 21,
+                       "tile-width": 16,
+                       "tile-height": 32,
+                       "hotspot-x": 3,
+                       "hotspot-y": 0,
+                       "first-index": 32,
+                       "last-index": 126 }
     }
 }

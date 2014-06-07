@@ -40,8 +40,8 @@ bin/rawtest: bin/$(MONOCLEBIN) demo/rawtest.c
 bin/jsontest: demo/json-test.c src/json.c src/tree.c src/tree.h
 	gcc -o bin/jsontest $(CFLAGSNOSDL) demo/json-test.c src/tree.c
 
-bin/earthball-res.zip: demo/resources/earth.png demo/resources/march.it demo/resources/torpedo.wav demo/resources/earthball.json
-	cd demo/resources && zip ../../bin/earthball-res.zip earth.png march.it torpedo.wav earthball.json
+bin/earthball-res.zip: demo/resources/earth.png demo/resources/monospace.png demo/resources/march.it demo/resources/torpedo.wav demo/resources/earthball.json
+	cd demo/resources && zip ../../bin/earthball-res.zip earth.png monospace.png march.it torpedo.wav earthball.json
 
 dirs:
 	mkdir -p bin && mkdir -p lib
