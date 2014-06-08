@@ -60,6 +60,11 @@ static MNCL_SUBSCRIBER_SET *subscribers = NULL;
 /* The current point in whatever iteration we're doing */
 static TREE_NODE *current_iter = NULL;
 
+/* Collision iteration also requires us to track where we are in the
+ * trait array and where we are in the iterated trait */
+static TREE_NODE *collision_other_iter = NULL;
+static unsigned int *collision_trait_iter = NULL;
+
 static void
 ensure_basic_traits(void)
 {
@@ -71,6 +76,7 @@ ensure_basic_traits(void)
         mncl_kv_insert(traits, "pre-physics", (void *)++num_traits);
         mncl_kv_insert(traits, "pre-render", (void *)++num_traits);
         mncl_kv_insert(traits, "render", (void *)++num_traits);
+        mncl_kv_insert(traits, "collision", (void *)++num_traits);
     }
 }
 
@@ -143,7 +149,7 @@ sync_object_trees(void)
          * through the traits indexed by name and look for stuff we've
          * previously not seen. */
         mncl_kv_foreach(traits, create_indexed_trait, NULL);
-        indexed_traits = num_traits;
+        indexed_traits = num_traits + 1;
     }
     /* Process any newly created objects, filing them under the traits
      * listed in their kind. */
@@ -165,6 +171,16 @@ sync_object_trees(void)
                     fprintf (stderr, "Target trait %d >= indexed trait count %d\n", *kind_traits, indexed_traits);
                 }
                 ++kind_traits;
+            }
+            /* Register for collisions if neccessary */
+            if (obj->kind->collisions && *obj->kind->collisions) {
+                MNCL_OBJECT_NODE *new_node = (MNCL_OBJECT_NODE *)malloc(sizeof(MNCL_OBJECT_NODE));
+                if (!new_node) {
+                    fprintf(stderr, "Heap exhaustion while organizing traits\n");
+                    abort();
+                }
+                new_node->obj = obj;
+                tree_insert(&subscribers[mncl_get_trait("collision")].objs, (TREE_NODE *)new_node, objcmp);
             }
             n = tree_next(n);
         }
@@ -277,6 +293,8 @@ mncl_create_object(float x, float y, const char *kind)
 MNCL_OBJECT *
 object_begin(MNCL_EVENT_TYPE which)
 {
+    /* sync_object_trees() will clear out pending_destruction so we
+     * don't have to check it here like we do in object_next() */
     sync_object_trees();
     /* TODO: Cache these results */
     switch(which) {
@@ -313,6 +331,106 @@ object_next(void)
         return &((MNCL_OBJECT_NODE *)current_iter)->obj->object;
     }
     return NULL;
+}
+
+void
+collision_begin(MNCL_COLLISION *collision) {
+    sync_object_trees();
+    current_iter = tree_minimum(&subscribers[mncl_get_trait("collision")].objs);
+    if (current_iter) {
+        collision_trait_iter = ((MNCL_OBJECT_NODE *)current_iter)->obj->kind->collisions;
+        if (*collision_trait_iter) {
+            collision_other_iter = tree_minimum(&subscribers[*collision_trait_iter].objs);
+        }
+        collision_next(collision);
+    } else {
+        collision->self = collision->other = NULL;
+    }
+}
+
+static void
+collision_advance_iter(void)
+{
+    /* First, try to advance the inner iterator. */
+    if (collision_other_iter) {
+        collision_other_iter = tree_next(collision_other_iter);
+        if (collision_other_iter) {
+            /* We're pointing at a testable pair of objects */
+            return;
+        }
+    }
+
+    /* We're out of objects in this trait.  Advance the trait iterator
+     * until we we find one with entries, or until we run out of
+     * traits. */
+    while (*collision_trait_iter) {
+        ++collision_trait_iter;
+        if (*collision_trait_iter) {
+            collision_other_iter = tree_minimum(&subscribers[*collision_trait_iter].objs);
+            if (collision_other_iter) {
+                return;
+            }
+        }
+    }
+
+    /* We're out of traits, and thus we're out of things to test
+     * current_iter against. On to the next object with things to
+     * collide with. */
+    while (current_iter) {
+        current_iter = tree_next(current_iter);
+        if (current_iter) {
+            collision_trait_iter = ((MNCL_OBJECT_NODE *)current_iter)->obj->kind->collisions;
+            while (*collision_trait_iter) {
+                collision_other_iter = tree_minimum(&subscribers[*collision_trait_iter].objs);
+                if (collision_other_iter) {
+                    return;
+                }
+                ++collision_trait_iter;
+            }
+        }
+    }
+    
+    /* We're out of objects. The iteration is over. */
+}
+
+void
+collision_next(MNCL_COLLISION *collision)
+{
+    while (current_iter) {
+        /* First, check to ensure that we can test these objects; one
+         * or both might have been destroyed by processing the
+         * previous event */
+        if (collision_other_iter &&
+            !tree_find(&pending_destruction, current_iter, objcmp) &&
+            !tree_find(&pending_destruction, collision_other_iter, objcmp)) {
+            MNCL_OBJECT *self = &((MNCL_OBJECT_NODE *)current_iter)->obj->object;
+            MNCL_OBJECT *other = &((MNCL_OBJECT_NODE *)collision_other_iter)->obj->object;
+            if (self != other) {
+                /* For now we've only got box-style collisions */
+                float s_left = self->x + self->sprite->hit_x;
+                float s_right = self->x + self->sprite->hit_x + self->sprite->hit_w;
+                float s_top = self->y + self->sprite->hit_y;
+                float s_bottom = self->y + self->sprite->hit_y + self->sprite->hit_h;
+                float o_left = other->x + other->sprite->hit_x;
+                float o_right = other->x + other->sprite->hit_x + other->sprite->hit_w;
+                float o_top = other->y + other->sprite->hit_y;
+                float o_bottom = other->y + other->sprite->hit_y + other->sprite->hit_h;
+
+                if ((s_right > o_left) && (s_left < o_right) &&
+                    (s_bottom > o_top) && (s_top < o_bottom)) {
+                    collision->self = self;
+                    collision->other = other;
+                    collision->trait_id = *collision_trait_iter;
+                    collision->trait = subscribers[*collision_trait_iter].name;
+                    collision_advance_iter();
+                    return;
+                }              
+            }  
+        }
+        collision_advance_iter();
+    }
+    /* If we got here, we fell off the end of the iteration. */
+    collision->self = collision->other = NULL;
 }
 
 void

@@ -54,6 +54,8 @@ void mncl_uninit_traits(void);
 void initialize_object_trees(void);
 MNCL_OBJECT *object_begin(MNCL_EVENT_TYPE which);
 MNCL_OBJECT *object_next(void);
+void collision_begin(MNCL_COLLISION *collision);
+void collision_next(MNCL_COLLISION *collision);
 void default_update_all_objects(void);
 void default_render_all_objects(void);
 

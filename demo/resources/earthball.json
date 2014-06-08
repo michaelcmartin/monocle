@@ -40,7 +40,10 @@
     },
     "kind": {
         "earth": { "sprite": "earth",
-                   "traits": ["pre-render"] }
+                   "traits": ["pre-render"] },
+        "crashy-earth": { "sprite": "earth",
+                          "traits": ["pre-render", "crashy"],
+                          "collisions": ["crashy"] }
     },
     "data": {
         "instructions": ["B to change background color",
