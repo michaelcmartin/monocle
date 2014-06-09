@@ -112,6 +112,72 @@ sprite_alloc(MNCL_DATA *arg)
 }
 
 static void *
+font_alloc(MNCL_DATA *arg)
+{
+    if (arg && arg->tag == MNCL_DATA_OBJECT) {
+        MNCL_DATA *mncl_data_w = mncl_data_lookup(arg, "width");
+        MNCL_DATA *mncl_data_h = mncl_data_lookup(arg, "height");
+        MNCL_DATA *mncl_data_first = mncl_data_lookup(arg, "first-index");
+        MNCL_DATA *mncl_data_last = mncl_data_lookup(arg, "last-index");
+        MNCL_DATA *mncl_data_ss = mncl_data_lookup(arg, "spritesheet");
+        MNCL_DATA *tile_w = mncl_data_lookup(arg, "tile-width");
+        MNCL_DATA *tile_h = mncl_data_lookup(arg, "tile-height");
+        MNCL_DATA *hot_x = mncl_data_lookup(arg, "hotspot-x");
+        MNCL_DATA *hot_y = mncl_data_lookup(arg, "hotspot-y");
+
+        MNCL_FONT *result = NULL;
+        MNCL_SPRITESHEET *spritesheet = NULL;
+        if (!(mncl_data_w && mncl_data_h && mncl_data_first && mncl_data_last && mncl_data_ss)) {
+            return NULL;
+        }
+        if (mncl_data_w->tag != MNCL_DATA_NUMBER || mncl_data_h->tag != MNCL_DATA_NUMBER) {
+            return NULL;
+        }
+        if (mncl_data_first->tag != MNCL_DATA_NUMBER || mncl_data_last->tag != MNCL_DATA_NUMBER) {
+            return NULL;
+        }
+        if (mncl_data_ss->tag != MNCL_DATA_STRING) {
+            return NULL;
+        }
+        spritesheet = mncl_spritesheet_resource(mncl_data_ss->value.string);
+        if (!spritesheet) {
+            return NULL;
+        }
+
+        result = (MNCL_FONT *)malloc(sizeof(MNCL_FONT));
+        if (!result) {
+            return NULL;
+        }
+        result->w = (int)mncl_data_w->value.number;
+        result->h = (int)mncl_data_h->value.number;
+        result->first = (int)mncl_data_first->value.number;
+        result->last = (int)mncl_data_last->value.number;
+        result->spritesheet = spritesheet;
+        /* Some sensible defaults for optional values */
+        result->hot_x = result->hot_y = 0;
+        result->tile_w = result->w;
+        result->tile_h = result->h;
+        /* Then override those if they were in the object */
+        if (hot_x && hot_x->tag == MNCL_DATA_NUMBER) {
+            result->hot_x = (int)hot_x->value.number;
+        }
+        if (hot_y && hot_y->tag == MNCL_DATA_NUMBER) {
+            result->hot_y = (int)hot_y->value.number;
+        }
+        if (tile_w && tile_w->tag == MNCL_DATA_NUMBER) {
+            result->tile_w = (int)tile_w->value.number;
+        }
+        if (tile_h && tile_h->tag == MNCL_DATA_NUMBER) {
+            result->tile_h = (int)tile_h->value.number;
+        }
+        /* TODO: Compute and pre-cache relevant derived facts like
+         * number of chars per row */
+        return result;
+    }
+    return NULL;
+}
+
+static void *
 sfx_alloc(MNCL_DATA *arg)
 {
     if (arg && arg->tag == MNCL_DATA_STRING) {
@@ -278,12 +344,13 @@ mncl_free_kind(void *obj) {
 static RES_CLASS raw = { { { NULL }, (MNCL_KV_DELETER)mncl_release_raw }, "raw", raw_alloc };
 static RES_CLASS spritesheet = { { { NULL }, (MNCL_KV_DELETER)mncl_free_spritesheet }, "spritesheet", spritesheet_alloc };
 static RES_CLASS sprite = { { { NULL }, (MNCL_KV_DELETER)mncl_free_sprite },  "sprite", sprite_alloc };
+static RES_CLASS font = { { { NULL }, free }, "font", font_alloc };
 static RES_CLASS sfx = { { { NULL }, (MNCL_KV_DELETER)mncl_free_sfx }, "sfx", sfx_alloc };
 static RES_CLASS music = { { { NULL }, free }, "music", music_alloc };
 static RES_CLASS data = { { { NULL }, (MNCL_KV_DELETER)mncl_free_data }, "data", data_alloc };
 static RES_CLASS kind = { { { NULL }, (MNCL_KV_DELETER)mncl_free_kind }, "kind", kind_alloc };
 
-static RES_CLASS *resclasses[] = { &raw, &spritesheet, &sprite, &sfx, &music, &data, &kind, NULL };
+static RES_CLASS *resclasses[] = { &raw, &spritesheet, &sprite, &font, &sfx, &music, &data, &kind, NULL };
 
 static void
 alloc_resource_type(const char *key, void *value, void *user)

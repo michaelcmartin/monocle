@@ -31,6 +31,12 @@ struct struct_MNCL_SPRITE {
 MNCL_SPRITE *mncl_alloc_sprite(int nframes);
 void mncl_free_sprite(MNCL_SPRITE *sprite);
 
+/* Fonts */
+typedef struct struct_MNCL_FONT {
+    MNCL_SPRITESHEET *spritesheet;
+    int w, h, tile_w, tile_h, hot_x, hot_y, first, last;
+} MNCL_FONT;
+
 /* SFX */
 MNCL_SFX *mncl_alloc_sfx(const char *resource_name);
 void mncl_free_sfx(MNCL_SFX *sfx);
