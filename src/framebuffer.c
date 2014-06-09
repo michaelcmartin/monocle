@@ -115,6 +115,7 @@ mncl_draw_rect(int x, int y, int w, int h,
 
 struct struct_MNCL_SPRITESHEET {
     SDL_Texture *tex;
+    int w, h;
 };
 
 MNCL_SPRITESHEET *
@@ -153,6 +154,8 @@ mncl_alloc_spritesheet(const char *resource_name)
         /* Fall through to cleanup */
     } else {
         printf ("Successfully made a texture for %s\n", resource_name);
+        spritesheet->w = loaded->w;
+        spritesheet->h = loaded->h;
     }
     SDL_FreeSurface(loaded);
     mncl_release_raw(raw);
@@ -193,6 +196,18 @@ mncl_draw_from_spritesheet(MNCL_SPRITESHEET *spritesheet,
     SDL_RenderCopy(renderer, spritesheet->tex, &src, &dest);
 }
 
+int
+mncl_spritesheet_width(MNCL_SPRITESHEET *spritesheet)
+{
+    return spritesheet ? spritesheet->w : 0;
+}
+
+int
+mncl_spritesheet_height(MNCL_SPRITESHEET *spritesheet)
+{
+    return spritesheet ? spritesheet->h : 0;
+}
+
 MNCL_SPRITE *
 mncl_alloc_sprite(int nframes)
 {
@@ -227,4 +242,23 @@ mncl_draw_sprite(MNCL_SPRITE *s, int x, int y, int frame)
     }
     f = s->frames + frame;
     mncl_draw_from_spritesheet(f->sheet, x-s->hot_x, y-s->hot_y, f->x, f->y, s->w, s->h);
+}
+
+void
+mncl_draw_string(MNCL_FONT *font, int x, int y, const char *msg)
+{
+    while (*msg) {
+        int c = *msg;
+        if (c >= font->first && c <= font->last) {
+            int glyph_x, glyph_y;
+            c -= font->first;
+
+            glyph_x = (c % font->chars_per_row) * font->tile_w;
+            glyph_y = (c / font->chars_per_row) * font->tile_h;
+            mncl_draw_from_spritesheet(font->spritesheet, x-font->hot_x, y-font->hot_y,
+                                       glyph_x, glyph_y, font->tile_w, font->tile_h);
+        }
+        x += font->w;
+        ++msg;
+    }
 }

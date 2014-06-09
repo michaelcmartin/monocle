@@ -34,7 +34,7 @@ void mncl_free_sprite(MNCL_SPRITE *sprite);
 /* Fonts */
 typedef struct struct_MNCL_FONT {
     MNCL_SPRITESHEET *spritesheet;
-    int w, h, tile_w, tile_h, hot_x, hot_y, first, last;
+    int w, h, tile_w, tile_h, hot_x, hot_y, first, last, chars_per_row;
 } MNCL_FONT;
 
 /* SFX */

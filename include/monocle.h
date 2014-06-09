@@ -135,6 +135,8 @@ struct struct_MNCL_SPRITESHEET;
 typedef struct struct_MNCL_SPRITESHEET MNCL_SPRITESHEET;
 
 extern MONOCULAR MNCL_SPRITESHEET *mncl_spritesheet_resource(const char *resource);
+extern MONOCULAR int mncl_spritesheet_width(MNCL_SPRITESHEET *spritesheet);
+extern MONOCULAR int mncl_spritesheet_height(MNCL_SPRITESHEET *spritesheet);
 extern MONOCULAR void mncl_draw_from_spritesheet(MNCL_SPRITESHEET *spritesheet,
                                 int x, int y,
                                 int my_x, int my_y,
@@ -164,6 +166,13 @@ typedef struct struct_MNCL_SPRITE MNCL_SPRITE;
 
 extern MONOCULAR MNCL_SPRITE *mncl_sprite_resource(const char *resource);
 extern MONOCULAR void mncl_draw_sprite(MNCL_SPRITE *s, int x, int y, int frame);
+
+/* Font component */
+struct struct_MNCL_FONT;
+typedef struct struct_MNCL_FONT MNCL_FONT;
+
+extern MONOCULAR MNCL_FONT *mncl_font_resource(const char *resource);
+extern MONOCULAR void mncl_draw_string(MNCL_FONT *font, int x, int y, const char *msg);
 
 /* Object component */
 

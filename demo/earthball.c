@@ -43,6 +43,7 @@ int
 main(int argc, char **argv)
 {
     MNCL_SFX *sfx;
+    MNCL_FONT *monospace;
     int done, i, countdown, music_on, bg, music_volume;
 
     mncl_init();
@@ -51,6 +52,7 @@ main(int argc, char **argv)
 
     mncl_load_resmap("earthball.json");
     sfx = mncl_sfx_resource("sfx");
+    monospace = mncl_font_resource("monospace");
     mncl_play_music_resource("bgm", 2000);
 
     for (i = 0; i < 16; ++i) {
@@ -135,7 +137,17 @@ main(int argc, char **argv)
             break;
         case MNCL_EVENT_RENDER:
             if (!e->value.self) {
-                mncl_draw_rect(256, 112, 256, 256, 128, 128, 128);
+                MNCL_DATA *insts;
+                mncl_draw_rect(132, 152, 503, 176, 128, 128, 128);
+                insts = mncl_data_resource("instructions");
+                if (insts && insts->tag == MNCL_DATA_ARRAY) {
+                    int i, y = 156;
+                    for (i = 0; i < insts->value.array.size; ++i) {
+                        MNCL_DATA *val = insts->value.array.data[i];
+                        mncl_draw_string(monospace, 136, y, (val && val->tag == MNCL_DATA_STRING) ? val->value.string : "(invalid datum)");
+                        y += 21;
+                    }
+                }
             }
             break;
         default:

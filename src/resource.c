@@ -139,6 +139,9 @@ font_alloc(MNCL_DATA *arg)
         if (mncl_data_ss->tag != MNCL_DATA_STRING) {
             return NULL;
         }
+        if (mncl_data_w->value.number == 0) {
+            return NULL;
+        }
         spritesheet = mncl_spritesheet_resource(mncl_data_ss->value.string);
         if (!spritesheet) {
             return NULL;
@@ -166,12 +169,14 @@ font_alloc(MNCL_DATA *arg)
         }
         if (tile_w && tile_w->tag == MNCL_DATA_NUMBER) {
             result->tile_w = (int)tile_w->value.number;
+            if (!result->tile_w) {
+                result->tile_w = result->w;
+            }
         }
         if (tile_h && tile_h->tag == MNCL_DATA_NUMBER) {
             result->tile_h = (int)tile_h->value.number;
         }
-        /* TODO: Compute and pre-cache relevant derived facts like
-         * number of chars per row */
+        result->chars_per_row = mncl_spritesheet_width(result->spritesheet) / result->tile_w;
         return result;
     }
     return NULL;
@@ -464,6 +469,12 @@ MNCL_SPRITE *
 mncl_sprite_resource(const char *resource)
 {
     return (MNCL_SPRITE *)mncl_kv_find(&sprite.values, resource);
+}
+
+MNCL_FONT *
+mncl_font_resource(const char *resource)
+{
+    return (MNCL_FONT *)mncl_kv_find(&font.values, resource);
 }
 
 MNCL_SFX *
