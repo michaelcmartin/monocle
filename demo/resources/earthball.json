@@ -44,7 +44,9 @@
                    "traits": ["pre-render"] },
         "crashy-earth": { "sprite": "earth",
                           "traits": ["pre-render", "crashy"],
-                          "collisions": ["crashy"] }
+                          "collisions": ["crashy"] },
+        "custom": { "sprite": "earth",
+                    "traits": ["pre-render", "render"] }
     },
     "data": {
         "instructions": ["B to change background color",

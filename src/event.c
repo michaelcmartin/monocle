@@ -193,13 +193,11 @@ mncl_pop_global_event(void)
     case MNCL_EVENT_RENDER:
         /* TODO: This should be part of a scene sort */
         if (!current_global_event.value.self) {
-            current_global_event.value.self = object_begin(MNCL_EVENT_RENDER);
+            current_global_event.value.self = render_begin();
         } else {
-            current_global_event.value.self = object_next();
+            current_global_event.value.self = render_next();
         }
         if (!current_global_event.value.self) {
-            /* TODO: This is a flagrant stopgap */
-            default_render_all_objects();
             current_global_event.type = MNCL_EVENT_POSTRENDER;
         }
         break;

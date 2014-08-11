@@ -26,6 +26,26 @@ objcmp(TREE_NODE *a, TREE_NODE *b)
     return (a_ < b_) ? -1 : ((a_ > b_) ? 1 : 0);
 }
 
+/* This is like objcmp, but it's for the rendering tree. Sort first by
+ * the depth of the object, and only for objects of identical depth
+ * should we compare pointers. */
+static int
+scenecmp(TREE_NODE *a, TREE_NODE *b)
+{
+    MNCL_OBJECT_FULL *a_obj = (MNCL_OBJECT_FULL *)((MNCL_OBJECT_NODE *)a)->obj;
+    MNCL_OBJECT_FULL *b_obj = (MNCL_OBJECT_FULL *)((MNCL_OBJECT_NODE *)b)->obj;
+    int depth_diff = a_obj->depth - b_obj->depth;
+    if (!depth_diff) {
+        intptr_t a_ = (intptr_t)(&(a_obj->object));
+        intptr_t b_ = (intptr_t)(&(b_obj->object));
+        /* As above, mess around with ternary here because we don't
+         * know if pointer differences at these ranges will fit in an
+         * int. */
+        return (a_ < b_) ? -1 : ((a_ > b_) ? 1 : 0);
+    }
+    return depth_diff;
+}
+
 /* Master set of objects. This tree is the one that owns its object
  * pointers; all others free their node structures without freeing the
  * object contained therein. */
@@ -39,6 +59,12 @@ static TREE master;
  * destruction, for its userdata element may refer to invalid
  * material. */
 static TREE pending_creation, pending_destruction;
+
+/* Objects that get drawn. It is not safe to alter the "depth" field
+ * of any of these objects except via set_object_depth, which properly
+ * keeps this structure sorted. It is not safe to alter the depth of
+ * objects during the rendering phase. */
+static TREE renderable;
 
 /* Master map of traits. Traits are immortal. The first time we
  * try to create or look up a trait, if this doesn't exist it will
@@ -87,6 +113,7 @@ initialize_object_trees(void)
     master.root = NULL;
     pending_creation.root = NULL;
     pending_destruction.root = NULL;
+    renderable.root = NULL;
     indexed_traits = 0;
     trait_capacity = 0;
     subscribers = NULL;
@@ -211,7 +238,13 @@ sync_object_trees(void)
                 }
                 ++kind_traits;
             }
-            /* TODO: Other global sets, like the display list, once we get one */
+            /* Remove from the display list */
+            found_node = tree_find(&renderable, (TREE_NODE *)&search_node, scenecmp);
+            if (found_node) {
+                tree_delete(&renderable, found_node);
+                free(found_node);
+            }
+
             /* Now actually destroy the object proper, which is in the master tree */
             found_node = tree_find(&master, (TREE_NODE *)&search_node, objcmp);
             if (found_node) {
@@ -272,6 +305,15 @@ mncl_create_object(float x, float y, const char *kind)
         obj->object.sprite = k->sprite;
         obj->depth = k->depth;
         obj->kind = k;
+        /* We can't insert into the renderables set until depth and
+         * kind are set */
+        if (obj->kind->visible) {
+            MNCL_OBJECT_NODE *node3 = malloc(sizeof(MNCL_OBJECT_NODE));
+            if (node3) {
+                node3->obj = obj;
+                tree_insert(&renderable, (TREE_NODE *)node3, scenecmp);
+            }
+        }
     } else {
         if (obj) {
             free(obj);
@@ -308,7 +350,6 @@ object_begin(MNCL_EVENT_TYPE which)
         current_iter = tree_minimum(&subscribers[mncl_get_trait("pre-render")].objs);
         break;
     default:
-        /* TODO: MNCL_EVENT_RENDER ought to do display-list iteration */
         current_iter = NULL;
         break;
     }
@@ -452,18 +493,48 @@ default_update_all_objects(void)
     }
 }
 
-/* THIS IS A TEMPORARY FUNCTION; IT WILL GO AWAY ONCE TRAITS ARE
- * IMPLEMENTED, AND IN PARTICULAR, THE INVISIBLE AND CUSTOMRENDER
- * TRAITS */
 void
-default_render_all_objects(void)
+mncl_object_set_depth(MNCL_OBJECT *o, int new_depth)
 {
-    TREE_NODE *n = tree_minimum(&master);
-    while (n) {
-        MNCL_OBJECT *o = &(((MNCL_OBJECT_NODE *)n)->obj->object);
-        if (o->sprite && o->sprite->nframes) {
+    MNCL_OBJECT_FULL *o_full = (MNCL_OBJECT_FULL *)o;
+    MNCL_OBJECT_NODE search;
+    TREE_NODE *render_node;
+    search.obj = o_full;
+    render_node = tree_find(&renderable, (TREE_NODE *)&search, scenecmp);
+    if (render_node) {
+        tree_delete(&renderable, render_node);
+        o_full->depth = new_depth;
+        tree_insert(&renderable, render_node, scenecmp);
+    }
+}
+
+static MNCL_OBJECT *
+render_process(void)
+{
+    while (current_iter) {
+        MNCL_OBJECT_FULL *o_full = ((MNCL_OBJECT_NODE *)current_iter)->obj;
+        MNCL_OBJECT *o = &(o_full->object);
+        if (o_full->kind->visible && o->sprite && o->sprite->nframes) {
+            if (o_full->kind->customrender) {
+                return o;
+            }
             mncl_draw_sprite(o->sprite, (int)o->x, (int)o->y, (int)o->f);
         }
-        n = tree_next(n);
+        current_iter = tree_prev(current_iter);
     }
+    return NULL;
+}
+
+MNCL_OBJECT *
+render_begin(void)
+{
+    current_iter = tree_maximum(&renderable);
+    return render_process();
+}
+
+MNCL_OBJECT *
+render_next(void)
+{
+    current_iter = tree_prev(current_iter);
+    return render_process();
 }

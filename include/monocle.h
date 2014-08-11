@@ -189,6 +189,7 @@ typedef struct struct_MNCL_OBJECT {
 } MNCL_OBJECT;
 
 extern MONOCULAR MNCL_OBJECT *mncl_create_object(float x, float y, const char *kind);
+extern MONOCULAR void mncl_object_set_depth(MNCL_OBJECT *object, int depth);
 
 /* Event component */
 
