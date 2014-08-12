@@ -4,23 +4,6 @@
 #include "monocle.h"
 
 void
-instructions(void)
-{
-    MNCL_DATA *insts;
-    insts = mncl_data_resource("instructions");
-    if (insts && insts->tag == MNCL_DATA_ARRAY) {
-        int i;
-        printf("Instructions:\n");
-        for (i = 0; i < insts->value.array.size; ++i) {
-            MNCL_DATA *val = insts->value.array.data[i];
-            printf ("    %s\n", (val && val->tag == MNCL_DATA_STRING) ? val->value.string : "(invalid datum)");
-        }
-    } else {
-        printf("No instructions available\n");
-    }
-}
-
-void
 update(MNCL_OBJECT *obj)
 {
     float newx = obj->x + obj->dx;
@@ -67,8 +50,6 @@ main(int argc, char **argv)
     music_on = 1;
     bg = 0;
     music_volume = 128;
-
-    instructions();
 
     mncl_hide_mouse_in_fullscreen(1);
 
