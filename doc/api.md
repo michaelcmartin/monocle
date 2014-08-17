@@ -41,15 +41,56 @@ Sets a boolean value regarding whether or not the mouse cursor should be invisib
 
 # Objects #
 
-To be written.
+Objects are the primary units of logic and agency in the Monocle system. Each object has:
+
+ - A _location_ represented as two floating point numbers (x, y).
+ - A _depth_ that places it in the scene. Objects with a lower depth are more forward in the scene (that is, they are rendered later).
+ - A _canonical sprite_. This may define the way it will be drawn if it is visible and does not have custom rendering routines. It also defines the hitbox of the object if the object is one that participates in collisions.
+ - A _current frame_ that indicates which frame from the canonical sprite should be drawn. It is a floating point number so that animation speeds may conveniently be less than 1 per frame.
+ - _Speeds_ for both location and animation frame.
+ - A _kind_, about which more below. Kinds define defaults for all of these values (except for location) and also define how the object will interact with the rest of the game world.
+ - Optionally, arbitrary _user data_ which is supplied by the library client and is bundled unchanged. This can be supplemental game-specific data such as hit points or acceleration, or, for a language like C++, a pointer to its own wrapper class for tighter binding of the Monocle event loop into an object-oriented framework.
+
+```C
+MNCL_OBJECT *mncl_create_object(float x, float y, const char *kind);
+```
+
+Creates an object of the designated kind at the designated location. Speed, depth, frame, and sprite are set to the default as specified by the kind, and the user data is initialized to `NULL`. All of these values except depth may be changed after this call by editing the fields in the `MNCL_OBJECT`. Depth is kept in a hidden field that is part of the allocation unit. To change depth, use the following function:
+
+```C
+void mncl_object_set_depth(MNCL_OBJECT *object, int depth);
+```
+
+Changing the depth of an object requires the scene graph to be resorted, so you cannot change it simply by assigning a field. Call this function to do so, instead.
 
 ## Kinds ##
 
-To be written.
+Kinds are an interesting part of the Monocle system; they are part of every object, but client code never deals with them directly. They are specified in the resource map, and named during object creation, but then they exist only implicitly.
 
-## Traits ##
+### Resource Map specification ###
 
-To be written.
+```JSON
+{
+    "kind": { "coin": { "dx": -5, "dy": 0,
+                        "frame": 3,
+                        "frame-speed": 1,
+                        "depth": 1000,
+                        "sprite": "coin",
+                        "traits": ["pickup"]
+                        "collisions": ["player"] },
+              "player": { "sprite": "player",
+                          "traits": ["player", "render", "pre-render"],
+                          "collisions": ["hazard", "pickup"] } }
+}
+```
+
+Generally, the only things you really need to specify here are the traits and collisions if any. The collisions key specifies which collisions you will participate in as the collider. The traits key specifies which collisions you will participate in as the collidee. In the example above, there will be two collision events created: one for when the player collides with the coin (on the "pickup" trait) and one for the coin colliding with the player (on the "player" trait). If the coin kind did not have a collisions key, then only the first event would be generated on collision.
+
+```C
+unsigned int mncl_get_trait(const char *trait);
+```
+
+When an object participates in a collision event, the reason the collision was relevant is reported in two fields: one is a character string identifying the trait participating in the collision, and the other is a small integer that encodes the same data. That integer is not necessarily constant across runs, because traits are only added when you load a resmap that defines a kind tha refers to that trait. However, once loaded in any given run, traits are immutable and immortal. This function lets you turn the string version of the traits (which _are_ immutable across runs) into the internal ID number for this run. This may make dispatching on collision events easier.
 
 # Events #
 
@@ -57,16 +98,30 @@ Internally, Monocle has an event loop that interacts with both the user and the 
 
 Events are specified with a constant identified what kind of event this is, and then an optional data structure that carries ancillary data. The exact data structures are listed below; a summary of the event types is presented here for convenience.
 
- - **Quit.** Type: `MNCL_EVENT_QUIT`. Data field: None. The program is exiting. Either the user closed the application window, or some part of the client code called `mncl_post_quit`. If this event is ever returned, all subsequent events will be another Quit event.
- - **Update.** Types: `MNCL_EVENT_PREINPUT`, `MNCL_EVENT_PREPHYSICS`, and `MNCL_EVENT_PRERENDER`. These are for updating game logic. Pre-input happens before input is read; pre-physics happens before objects are do their default updates and before collision detection, and pre-render happens after collisions and just before drawing starts.
- - **Collision.** Types: `MNCL_EVENT_COLLISION`. Objects have traits and also list traits with which they collide. One collision event will be fired for each triple of `(object1, object2, trait)` for which `object1` and `object2` overlap, `object1` collides with `trait`, and `object2` has `trait`.
- - **Render.** Types: `MNCL_EVENT_RENDER`, and `MNCL_EVENT_POSTRENDER`. These are the callbacks that signal the client that it is time to draw things. The "generic" version of these events fires first, Conceptually, prerendering is for background images, render is for the sprites, and postrender is for the HUD and GUI.
+ - **Update.** Types: `MNCL_EVENT_PREINPUT`, `MNCL_EVENT_PREPHYSICS`, and `MNCL_EVENT_PRERENDER`. These are for updating game logic. Pre-input happens before input is read; pre-physics happens before objects are do their default updates and before collision detection, and pre-render happens after collisions and just before drawing starts. Objects with the traits "pre-input", "pre-physics", or "pre-render", respectively, will receive events of the corresponding types.
+ - **Collision.** Types: `MNCL_EVENT_COLLISION`. Objects have traits and also list traits with which they collide. 
+ - **Render.** Types: `MNCL_EVENT_RENDER`, and `MNCL_EVENT_POSTRENDER`. These are the callbacks that signal the client that it is time to draw things. The "generic" version of these events fires first, Conceptually, rendering at the global scale is for background images, render at the object scale is for the sprites, and postrender is for the HUD and GUI. Objects cannot receive postrender events. Objects will receive render events if they do not have the "invisible" trait and do have the "render" trait. If they have neither of these traits, a default rendering routine will run which draws their current sprite frame at their current location.
  - **Keyboard events.** Types: `MNCL_EVENT_KEYDOWN`, `MNCL_EVENT_KEYUP`. Data field: `key`. User pressed or released the key identified by the symbol specified by `key`. These symbol constants are compatible with the `SDL_keysym` enumeration for now, but may get a rename later so that SDL headers need not be directly included.
  - **Mouse move events.** Type: `MNCL_EVENT_MOUSEMOVE`. Data field: `mousemove`. When the mouse is moved within the window, a series of these event are fired. the `x` and `y` subfields give the mouse location in screen coordinates.
  - **Mouse button events.** Types: `MNCL_EVENT_MOUSEBUTTONDOWN`, `MNCL_EVENT_MOUSEBUTTONUP`. Data field: `mousebutton`. The value is which button was pressed or released.
  - **Joystick move events.** Type: `MNCL_EVENT_JOYAXISMOVE`. Data field: `joystick`. When an analog joystick is moved, the axis it moved on gets a new value. This usually needs to be calibrated, both to get a good idea of where the edges are but also to get a good idea of where the dead zone should be. The `stick` field identifies the joystick, the `index` field of the data indicates which axis moved, and the `value` field indicates the new location of the stick on that axis. If a stick is moved diagonally, multiple events will fire. *Due to SDL using the older DirectInput library for joystick input, the LT and RT buttons on an XBox 360 controller will register as axis moves and generally misbehave. Avoid use of these buttons if possible.*
  - **Joystick button events.** Types: `MNCL_EVENT_JOYBUTTONDOWN`, `MNCL_EVENT_JOYBUTTONUP`. Data field: `joystick`. The `stick` is the joystick, the `index` is the button that has been pressed or released.
  - **Joystick hat events.** Types: `MNCL_EVENT_JOYHATMOVE`. Data field: `joystick`. The `stick` is the joystick, the `index` is the hat number, and the `value` is the new hat orientation. Orientation constants currently track SDL's. *D-Pads often present as Hats.*
+
+## Frame Sequence ##
+
+ - `MNCL_EVENT_PREINPUT` - it first fires with a NULL object each frame, and then will fire once for each object with the "pre-input" trait. The object being processed is in the `self` field of the union.
+ - All input events, if any: `MNCL_EVENT_KEYDOWN`, `MNCL_EVENT_KEYUP`, `MNCL_EVENT_MOUSEMOVE`, `MNCL_EVENT_MOUSEBUTTONDOWN`, `MNCL_EVENT_MOUSEBUTTONUP`, `MNCL_EVENT_JOYAXISMOVE`, `MNCL_EVENT_JOYBUTTONDOWN`, `MNCL_EVENT_JOYBUTTONUP`, and `MNCL_EVENT_JOYHATMOVE`. The relevant input data is in the `key`, `mousemove`, `mousebutton`, or `joystick` fields as appropriate.
+ - `MNCL_EVENT_PREPHYSICS` - it first fires with a NULL object each frame, and then will fire once for each object with the "pre-physics" trait. The object being processed is in the `self` field of the union.
+ - All objects have their _x_, _y_, and _f_ values updated by _dx_, _dy_, and _df_.
+ - `MNCL_EVENT_COLLISION` - This fires only if collisions happen. One collision event will be fired for each triple of `(object1, object2, trait)` for which `object1` and `object2` overlap, `object1` collides with `trait`, and `object2` has `trait`. Information about the collision and why it happened will be in the `collision` field.
+ - `MNCL_EVENT_PRERENDER` - it first fires with a NULL object each frame, and then will fire once for each object with the "pre-render" trait. The object being processed is in the `self` field of the union. This is normally where frame-logic updates happen after reacting to collisions.
+ - `MNCL_EVENT_RENDER` - it first fires with a NULL object each frame, and then will fire once for each object with the "render" trait. The object being processed is in the `self` field of the union. This is normally where frame-logic updates happen after reacting to collisions. _It is only safe to actually call drawing functions while processing a RENDER or POSTRENDER event._ The expectation is that RENDER on no object will draw the backgrounds, then RENDER on the objects will draw the objects. If "render" is not set and "invisible" is also not set, then instead of firing an event, the object will simply draw itself based on its values of _x_, _y_, and _f_.
+ - `MNCL_EVENT_POSTRENDER` - This fires exactly once each frame, and is for final drawing at the global context. It is most likely going to be used to do things like draw the score if you do not have gamemaster objects to do this for you.
+
+After that, it goes back to `MNCL_EVENT_PREINPUT`.  If at any point the function `mncl_post_quit` is called, or if the user or OS closes the game window, then all subsequent events will be `MNCL_EVENT_QUIT`. You are expected to transition to graceful shutdown upon receiving this event. (It is nevertheless permitted to transition to a shutdown at any point without receiving this event; `mncl_uninit` and friends will all do the right thing as long as you also stop pumping the event loop.)
+
+Objects that are created during one phase in the frame sequence will not actually appear until the next phase. Objects that are destroyed will stop appearing in events immediately but their resources will not be collected until the beginning of the next phase. It is up to you to clean up the userdata before telling Monocle to destroy the object.
 
 ### Data Structures ###
 
@@ -132,9 +187,9 @@ These routines load resource specifications out of your search path. These are J
 
 ```JSON
 {
-    "type1": { "type1_resource1": { "key", "value1" },
-               "type1_resource2": { "key", "value2" } },
-    "type2": { "type2_resource1": [ "other type information for this type" ] }
+    "type1": { "type1_resource1": { "key": "value1" },
+               "type1_resource2": { "key": "value2" } },
+    "type2": { "type2_resource1": [ "information for this type" ] }
 }
 ```
 
@@ -310,7 +365,7 @@ To be written.
 
 ## Kinds ##
 
-To be written.
+While these are technically a resource type, we covered them in detail up in the section on Objects.
 
 ## Semi-structured Data ##
 
