@@ -222,6 +222,7 @@ kind_alloc(MNCL_DATA *arg)
             /* Set some defaults */
             result->dx = 0;
             result->dy = 0;
+            result->f = 0;
             result->df = 1;
             result->sprite = NULL;
             result->visible = 1;
@@ -234,6 +235,10 @@ kind_alloc(MNCL_DATA *arg)
             v = mncl_data_lookup(arg, "dy");
             if (v && v->tag == MNCL_DATA_NUMBER) {
                 result->dy = (float)v->value.number;
+            }
+            v = mncl_data_lookup(arg, "frame");
+            if (v && v->tag == MNCL_DATA_NUMBER) {
+                result->f = (float)v->value.number;
             }
             v = mncl_data_lookup(arg, "frame-speed");
             if (v && v->tag == MNCL_DATA_NUMBER) {
