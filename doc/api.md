@@ -96,18 +96,6 @@ When an object participates in a collision event, the reason the collision was r
 
 Internally, Monocle has an event loop that interacts with both the user and the intrinsic game physics. Each frame goes through a series of events, which are reported to the client once per frame. In addition, object traits will cause the various phases generate callbacks for each callback, appropriately. 
 
-Events are specified with a constant identified what kind of event this is, and then an optional data structure that carries ancillary data. The exact data structures are listed below; a summary of the event types is presented here for convenience.
-
- - **Update.** Types: `MNCL_EVENT_PREINPUT`, `MNCL_EVENT_PREPHYSICS`, and `MNCL_EVENT_PRERENDER`. These are for updating game logic. Pre-input happens before input is read; pre-physics happens before objects are do their default updates and before collision detection, and pre-render happens after collisions and just before drawing starts. Objects with the traits "pre-input", "pre-physics", or "pre-render", respectively, will receive events of the corresponding types.
- - **Collision.** Types: `MNCL_EVENT_COLLISION`. Objects have traits and also list traits with which they collide. 
- - **Render.** Types: `MNCL_EVENT_RENDER`, and `MNCL_EVENT_POSTRENDER`. These are the callbacks that signal the client that it is time to draw things. The "generic" version of these events fires first, Conceptually, rendering at the global scale is for background images, render at the object scale is for the sprites, and postrender is for the HUD and GUI. Objects cannot receive postrender events. Objects will receive render events if they do not have the "invisible" trait and do have the "render" trait. If they have neither of these traits, a default rendering routine will run which draws their current sprite frame at their current location.
- - **Keyboard events.** Types: `MNCL_EVENT_KEYDOWN`, `MNCL_EVENT_KEYUP`. Data field: `key`. User pressed or released the key identified by the symbol specified by `key`. These symbol constants are compatible with the `SDL_keysym` enumeration for now, but may get a rename later so that SDL headers need not be directly included.
- - **Mouse move events.** Type: `MNCL_EVENT_MOUSEMOVE`. Data field: `mousemove`. When the mouse is moved within the window, a series of these event are fired. the `x` and `y` subfields give the mouse location in screen coordinates.
- - **Mouse button events.** Types: `MNCL_EVENT_MOUSEBUTTONDOWN`, `MNCL_EVENT_MOUSEBUTTONUP`. Data field: `mousebutton`. The value is which button was pressed or released.
- - **Joystick move events.** Type: `MNCL_EVENT_JOYAXISMOVE`. Data field: `joystick`. When an analog joystick is moved, the axis it moved on gets a new value. This usually needs to be calibrated, both to get a good idea of where the edges are but also to get a good idea of where the dead zone should be. The `stick` field identifies the joystick, the `index` field of the data indicates which axis moved, and the `value` field indicates the new location of the stick on that axis. If a stick is moved diagonally, multiple events will fire. *Due to SDL using the older DirectInput library for joystick input, the LT and RT buttons on an XBox 360 controller will register as axis moves and generally misbehave. Avoid use of these buttons if possible.*
- - **Joystick button events.** Types: `MNCL_EVENT_JOYBUTTONDOWN`, `MNCL_EVENT_JOYBUTTONUP`. Data field: `joystick`. The `stick` is the joystick, the `index` is the button that has been pressed or released.
- - **Joystick hat events.** Types: `MNCL_EVENT_JOYHATMOVE`. Data field: `joystick`. The `stick` is the joystick, the `index` is the hat number, and the `value` is the new hat orientation. Orientation constants currently track SDL's. *D-Pads often present as Hats.*
-
 ## Frame Sequence ##
 
  - `MNCL_EVENT_PREINPUT` - it first fires with a NULL object each frame, and then will fire once for each object with the "pre-input" trait. The object being processed is in the `self` field of the union.
@@ -348,10 +336,10 @@ Draw an image from the sprite sheet at (x, y) on the screen. The last four argum
 
 ```C
 void mncl_draw_rect(int x, int y, int w, int h, 
-                    unsigned char r, unsigned char g, unsigned char b,
+                    unsigned char r, unsigned char g, unsigned char b);
 ```
 
-Draw a filled rectangle at (x, y) of width (w, h) of color (r, g, b). Colors are bytes. *Yeah, it's not really a spritesheet function, but it's closer to that than anything else.*
+Draw a filled rectangle at (x, y) of width (w, h) of color (r, g, b). Colors are bytes.
 
 Like `mncl_draw_from_spritesheet`, it is only safe to call this when processing a `MNCL_RENDER` event.
 
@@ -373,10 +361,10 @@ A sprite is defined by a dictionary that defines the various important values sp
                                       {"spritesheet": "earth", "x":  64, "y":   0},
                                       {"spritesheet": "earth", "x": 128, "y":   0},
                                       {"spritesheet": "earth", "x": 192, "y":   0}],
-                           "hitbox-x" = 16,
-                           "hitbox-y" = 16,
-                           "hitbox-width" = 32,
-                           "hitbox-height" = 32 } }
+                           "hitbox-x": 16,
+                           "hitbox-y": 16,
+                           "hitbox-width": 32,
+                           "hitbox-height": 32 } }
 }
 ```
 
@@ -387,6 +375,8 @@ void mncl_draw_sprite(MNCL_SPRITE *s, int x, int y, int frame);
 ```
 
 Unless you're doing custom rendering you probably won't need to call this function, but if you are, this is pretty straightforward; it draws the specified frame of the specified sprite at the specified (x, y) location. The "hotspot" value is subtracted from x and y to get the upper-left corner of the image, so the (x, y) you give here is basically where the hotspot goes.
+
+It is only safe to call this function when processing a RENDER-related event.
 
 ## Fonts ##
 
@@ -412,7 +402,7 @@ Most of these values are the same as they are for sprites. The main new values a
 void mncl_draw_string(MNCL_FONT *font, int x, int y, const char *msg);
 ```
 
-This draws the message in the given font at the requested location. The text is left-justified.
+This draws the message in the given font at the requested location. The text is left-justified. It is only safe to call this function when processing a RENDER-related event.
 
 ## Kinds ##
 
