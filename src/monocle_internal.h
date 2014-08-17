@@ -53,7 +53,6 @@ typedef struct struct_MNCL_KIND {
 } MNCL_KIND;
 
 MNCL_KIND *mncl_kind_resource(const char *resource);
-unsigned int mncl_get_trait(const char *trait);
 void mncl_uninit_traits(void);
 
 /* Objects */

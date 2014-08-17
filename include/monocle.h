@@ -186,10 +186,14 @@ typedef struct struct_MNCL_OBJECT {
     /* Information provided by the client to associate with this
      * object. Monocle itself will never touch this data. */
     void *user_data;
+    /* There are additional, private members past this in the "true"
+     * object class. Only deal with MNCL_OBJECTs via pointers you get
+     * from the Monocle API! */
 } MNCL_OBJECT;
 
 extern MONOCULAR MNCL_OBJECT *mncl_create_object(float x, float y, const char *kind);
 extern MONOCULAR void mncl_object_set_depth(MNCL_OBJECT *object, int depth);
+extern MONOCULAR unsigned int mncl_get_trait(const char *trait);
 
 /* Event component */
 
