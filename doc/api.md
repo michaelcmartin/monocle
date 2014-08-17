@@ -57,24 +57,6 @@ Internally, Monocle has an event loop that interacts with both the user and the 
 
 Events are specified with a constant identified what kind of event this is, and then an optional data structure that carries ancillary data. The exact data structures are listed below; a summary of the event types is presented here for convenience.
 
-    MNCL_EVENT_QUIT,
-    MNCL_EVENT_INIT,
-    MNCL_EVENT_PREINPUT,
-    MNCL_EVENT_KEYDOWN,
-    MNCL_EVENT_KEYUP,
-    MNCL_EVENT_MOUSEMOVE,
-    MNCL_EVENT_MOUSEBUTTONDOWN,
-    MNCL_EVENT_MOUSEBUTTONUP,
-    MNCL_EVENT_JOYAXISMOVE,
-    MNCL_EVENT_JOYBUTTONDOWN,
-    MNCL_EVENT_JOYBUTTONUP,
-    MNCL_EVENT_JOYHATMOVE,
-    MNCL_EVENT_PREPHYSICS,
-    MNCL_EVENT_COLLISION,
-    MNCL_EVENT_PRERENDER,
-    MNCL_EVENT_RENDER,
-    MNCL_EVENT_POSTRENDER,
-
  - **Quit.** Type: `MNCL_EVENT_QUIT`. Data field: None. The program is exiting. Either the user closed the application window, or some part of the client code called `mncl_post_quit`. If this event is ever returned, all subsequent events will be another Quit event.
  - **Update.** Types: `MNCL_EVENT_PREINPUT`, `MNCL_EVENT_PREPHYSICS`, and `MNCL_EVENT_PRERENDER`. These are for updating game logic. Pre-input happens before input is read; pre-physics happens before objects are do their default updates and before collision detection, and pre-render happens after collisions and just before drawing starts.
  - **Collision.** Types: `MNCL_EVENT_COLLISION`. Objects have traits and also list traits with which they collide. One collision event will be fired for each triple of `(object1, object2, trait)` for which `object1` and `object2` overlap, `object1` collides with `trait`, and `object2` has `trait`.
@@ -152,7 +134,7 @@ These routines load resource specifications out of your search path. These are J
 {
     "type1": { "type1_resource1": { "key", "value1" },
                "type1_resource2": { "key", "value2" } },
-    "type2": { "type2_resource1": [ "other type information for this type" ]
+    "type2": { "type2_resource1": [ "other type information for this type" ] }
 }
 ```
 
@@ -288,16 +270,7 @@ A spritesheet is one or more images stored as a single unit. If you're designing
 
 ### Resource map format ###
 
-```JSON
-{
-    "spritesheet": { "id1": "filename1",
-                     "id2": "filename2",
-                     ...
-                     "idn": "filenamen" }
-}
-```
-
-The filenames should be of image files, ideally PNG, though anything SDL2_image can read should be fine.
+These are also simple filenames, like raw resources. They should name image files, ideally PNG, though anything SDL2_image can read should be fine.
 
 ### Data Structures ###
 
@@ -329,9 +302,15 @@ Like `mncl_draw_from_spritesheet`, it is only safe to call this when processing 
 
 ## Sprites ##
 
+To be written. Our first case where the resource map has to specify a bunch of stuff.
+
 ## Fonts ##
 
+To be written.
+
 ## Kinds ##
+
+To be written.
 
 ## Semi-structured Data ##
 
