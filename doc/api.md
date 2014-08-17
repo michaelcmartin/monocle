@@ -195,7 +195,7 @@ These routines load resource specifications out of your search path. These are J
 
 At the moment, the types of things you specify are `raw`, `data`, `spritesheet`, `sprite`, `font`, `sfx`, `music`, and `kind`. When you load a resource map, all the things it describes (except music and kinds) are mapped directly into memory and stay there until the map is unloaded. If you have very large raw data items or sound effects, it is best to put them in separate maps.  "Kinds," which define the properties of game objects, are immortal once loaded.
 
-For a complete example of a full resource map, see the `demo/resources/earthball.json` file.
+For a complete example of a full resource map, see the [demo/resources/earthball.json](https://github.com/michaelcmartin/monocle/blob/master/demo/resources/earthball.json) file.
 
 ```C
 MNCL_RAW *mncl_raw_resource(const char *resource);
@@ -357,11 +357,62 @@ Like `mncl_draw_from_spritesheet`, it is only safe to call this when processing 
 
 ## Sprites ##
 
-To be written. Our first case where the resource map has to specify a bunch of stuff.
+While spritesheets are the most basic unit of graphics, sprites are the level you usually want to work with things in. Sprites take rectangles out of spritesheets and arrange them into a series of frames. They also provide a _hitbox_, which is a rectangle that participates in collisions, and a _hotspot_, which is the point that actually occupies the (x, y) coordinate the sprite is drawn at.
+
+### Resource Map format ###
+
+A sprite is defined by a dictionary that defines the various important values sprites have:
+
+```JSON
+{
+    "sprite": { "earth": { "width": 64,
+                           "height": 64,
+                           "hotspot-x": 0,
+                           "hotspot-y": 0,
+                           "frames": [{"spritesheet": "earth", "x":   0, "y":   0},
+                                      {"spritesheet": "earth", "x":  64, "y":   0},
+                                      {"spritesheet": "earth", "x": 128, "y":   0},
+                                      {"spritesheet": "earth", "x": 192, "y":   0}],
+                           "hitbox-x" = 16,
+                           "hitbox-y" = 16,
+                           "hitbox-width" = 32,
+                           "hitbox-height" = 32 } }
+}
+```
+
+The "width", "height", and "frames" fields must be present. The "frames" value must be an array of objects, and each element must also have "spritesheet", "x", and "y" fields. The hotspot values are optional (they default to 0) and the hitbox values are also optional (they default to the entire rectangle that is the sprite).
+
+```C
+void mncl_draw_sprite(MNCL_SPRITE *s, int x, int y, int frame);
+```
+
+Unless you're doing custom rendering you probably won't need to call this function, but if you are, this is pretty straightforward; it draws the specified frame of the specified sprite at the specified (x, y) location. The "hotspot" value is subtracted from x and y to get the upper-left corner of the image, so the (x, y) you give here is basically where the hotspot goes.
 
 ## Fonts ##
 
-To be written.
+Monocle doesn't interact very thoroughly with "real" fonts; people who want to use TrueType fonts or similar should link in SDL2_ttf and use it in their custom rendering or post-rendering routines. It _does_, however, provide a simple monospace system for tile-like fonts.
+
+### Resource map format ###
+
+{
+    "font": { "monospace": { "spritesheet": "monospace",
+                             "width": 11,
+                             "height": 21,
+                             "tile-width": 16,
+                             "tile-height": 32,
+                             "hotspot-x": 3,
+                             "hotspot-y": 0,
+                             "first-index": 32,
+                             "last-index": 126 } }
+}
+
+Most of these values are the same as they are for sprites. The main new values are the first and last indices, which are the unicode code points this font can handle, and the notion of _tile width_ and _tile height_. These values need to divide the spritesheet's dimensions evenly, and each character is placed in these tiles, left to right, top to bottom. The sample font here corresponds to the monospace font in [demo/resources/monospace.png](https://github.com/michaelcmartin/monocle/blob/master/demo/resources/monospace.png).
+
+```C
+void mncl_draw_string(MNCL_FONT *font, int x, int y, const char *msg);
+```
+
+This draws the message in the given font at the requested location. The text is left-justified.
 
 ## Kinds ##
 
@@ -453,4 +504,4 @@ This allows for directed iteration. For every (key, value) pair in `kv`, `mncl_k
 
 # Conclusion #
 
-To be written. Seems like we should have one, though.
+Monocle is still a work in progress. I fully expect that large parts of this will be rewritten and redesigned as I apply it to other projects. However, it's already grown enough that I'm relatively confident in the parts that are done.
