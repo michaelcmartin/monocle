@@ -12,7 +12,7 @@ void mncl_init(void);
 void mncl_uninit(void);
 ```
 
-These two calls should bracket all usage of the Monocle library. They're listed with the framebuffer component both for convenience and because the raw data component doesn't happen to need them.
+These two calls should bracket all usage of the Monocle library.
 
 ```C
 int mncl_config_video (title, width, height, fullscreen, reserved);
@@ -76,7 +76,7 @@ Kinds are an interesting part of the Monocle system; they are part of every obje
                         "frame-speed": 1,
                         "depth": 1000,
                         "sprite": "coin",
-                        "traits": ["pickup"]
+                        "traits": ["pickup"],
                         "collisions": ["player"] },
               "player": { "sprite": "player",
                           "traits": ["player", "render", "pre-render"],
@@ -384,6 +384,7 @@ Monocle doesn't interact very thoroughly with "real" fonts; people who want to u
 
 ### Resource map format ###
 
+```JSON
 {
     "font": { "monospace": { "spritesheet": "monospace",
                              "width": 11,
@@ -395,6 +396,7 @@ Monocle doesn't interact very thoroughly with "real" fonts; people who want to u
                              "first-index": 32,
                              "last-index": 126 } }
 }
+```
 
 Most of these values are the same as they are for sprites. The main new values are the first and last indices, which are the unicode code points this font can handle, and the notion of _tile width_ and _tile height_. These values need to divide the spritesheet's dimensions evenly, and each character is placed in these tiles, left to right, top to bottom. The sample font here corresponds to the monospace font in [demo/resources/monospace.png](https://github.com/michaelcmartin/monocle/blob/master/demo/resources/monospace.png).
 
