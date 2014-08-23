@@ -331,6 +331,18 @@ mncl_create_object(float x, float y, const char *kind)
     return &(obj->object);
 }
 
+void
+mncl_destroy_object(MNCL_OBJECT *obj)
+{
+    if (obj) {
+        MNCL_OBJECT_NODE *node = malloc(sizeof(MNCL_OBJECT_NODE));
+        if (node) {
+            node->obj = (MNCL_OBJECT_FULL *)obj;
+            tree_insert(&pending_destruction, (TREE_NODE *)node, objcmp);
+        }
+    }
+}
+
 MNCL_OBJECT *
 object_begin(MNCL_EVENT_TYPE which)
 {
@@ -513,7 +525,8 @@ render_process(void)
     while (current_iter) {
         MNCL_OBJECT_FULL *o_full = ((MNCL_OBJECT_NODE *)current_iter)->obj;
         MNCL_OBJECT *o = &(o_full->object);
-        if (o_full->kind->visible && o->sprite && o->sprite->nframes) {
+        if (o_full->kind->visible && o->sprite && o->sprite->nframes &&
+                !tree_find(&pending_destruction, current_iter, objcmp)) {
             if (o_full->kind->customrender) {
                 return o;
             }

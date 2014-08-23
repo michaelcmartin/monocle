@@ -192,6 +192,7 @@ typedef struct struct_MNCL_OBJECT {
 } MNCL_OBJECT;
 
 extern MONOCULAR MNCL_OBJECT *mncl_create_object(float x, float y, const char *kind);
+extern MONOCULAR void mncl_destroy_object(MNCL_OBJECT *obj);
 extern MONOCULAR void mncl_object_set_depth(MNCL_OBJECT *object, int depth);
 extern MONOCULAR unsigned int mncl_get_trait(const char *trait);
 
@@ -237,6 +238,8 @@ typedef struct struct_MNCL_EVENT {
 } MNCL_EVENT;
 
 extern MONOCULAR MNCL_EVENT *mncl_pop_global_event(void);
+
+extern MONOCULAR void mncl_post_quit(void);
 
 extern MONOCULAR MNCL_EVENT_TYPE mncl_event_type(MNCL_EVENT *evt);
 extern MONOCULAR int mncl_event_key(MNCL_EVENT *evt);

@@ -54,6 +54,12 @@ mncl_event_joy_value(MNCL_EVENT *evt)
 static Uint32 target_time = 0;
 static MNCL_EVENT current_global_event = { MNCL_EVENT_INIT, { 0 } };
 
+void
+mncl_post_quit(void)
+{
+    current_global_event.type = MNCL_EVENT_QUIT;
+}
+
 MNCL_EVENT *
 mncl_pop_global_event(void)
 {
@@ -191,7 +197,6 @@ mncl_pop_global_event(void)
         }
         break;
     case MNCL_EVENT_RENDER:
-        /* TODO: This should be part of a scene sort */
         if (!current_global_event.value.self) {
             current_global_event.value.self = render_begin();
         } else {
