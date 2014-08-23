@@ -209,6 +209,14 @@ sync_object_trees(void)
                 new_node->obj = obj;
                 tree_insert(&subscribers[mncl_get_trait("collision")].objs, (TREE_NODE *)new_node, objcmp);
             }
+            /* Register for rendering if necessary */
+            if (obj->kind->visible) {
+                MNCL_OBJECT_NODE *new_node = malloc(sizeof(MNCL_OBJECT_NODE));
+                if (new_node) {
+                    new_node->obj = obj;
+                    tree_insert(&renderable, (TREE_NODE *)new_node, scenecmp);
+                }
+            }
             n = tree_next(n);
         }
         /* Now clear out the space we'd been using to set these
@@ -305,15 +313,6 @@ mncl_create_object(float x, float y, const char *kind)
         obj->object.sprite = k->sprite;
         obj->depth = k->depth;
         obj->kind = k;
-        /* We can't insert into the renderables set until depth and
-         * kind are set */
-        if (obj->kind->visible) {
-            MNCL_OBJECT_NODE *node3 = malloc(sizeof(MNCL_OBJECT_NODE));
-            if (node3) {
-                node3->obj = obj;
-                tree_insert(&renderable, (TREE_NODE *)node3, scenecmp);
-            }
-        }
     } else {
         if (obj) {
             free(obj);
