@@ -394,6 +394,7 @@ mncl_load_resmap(const char *path)
     MNCL_DATA *resmap = NULL;
     MNCL_RAW *resmap_file = mncl_acquire_raw(path);
     if (!resmap_file) {
+        printf ("WARNING: Could not find resource map %s\n", path);
         return;
     }
     resmap = mncl_parse_data((char *)resmap_file->data, resmap_file->size);
