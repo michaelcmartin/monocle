@@ -4,6 +4,15 @@
 #include "monocle.h"
 
 void
+create_earth(void)
+{
+    MNCL_OBJECT *obj = mncl_create_object(rand() % (768 - 64), rand() % (480 - 64), "earth");
+    obj->dx = (rand() % 5 + 1) * ((rand() % 2) ? 1 : -1);
+    obj->dy = (rand() % 5 + 1) * ((rand() % 2) ? 1 : -1);
+    obj->f = rand() % 30;
+}
+
+void
 update(MNCL_OBJECT *obj)
 {
     float newx = obj->x + obj->dx;
@@ -27,7 +36,7 @@ main(int argc, char **argv)
 {
     MNCL_SFX *sfx;
     MNCL_FONT *monospace;
-    int done, i, countdown, music_on, bg, music_volume;
+    int done, i, countdown, destroy_something, music_on, bg, music_volume;
 
     mncl_init();
     mncl_config_video("Earthball Demo", 768, 480, 0, 0);
@@ -39,14 +48,12 @@ main(int argc, char **argv)
     mncl_play_music_resource("bgm", 2000);
 
     for (i = 0; i < 16; ++i) {
-        MNCL_OBJECT *obj = mncl_create_object(rand() % (768 - 64), rand() % (480 - 64), "earth");
-        obj->dx = (rand() % 5 + 1) * ((rand() % 2) ? 1 : -1);
-        obj->dy = (rand() % 5 + 1) * ((rand() % 2) ? 1 : -1);
-        obj->f = rand() % 30;
+        create_earth();
     }
 
     done = 0;
     countdown = 0;
+    destroy_something = 0;
     music_on = 1;
     bg = 0;
     music_volume = 128;
@@ -68,6 +75,12 @@ main(int argc, char **argv)
             case SDLK_b:
                 bg = (bg + 1) % 4;
                 mncl_set_clear_color(bg == 1 ? 128 : 0, bg == 2 ? 128 : 0, bg == 3 ? 128 : 0);
+                break;
+            case SDLK_c:
+                create_earth();
+                break;
+            case SDLK_d:
+                destroy_something = 1;
                 break;
             case SDLK_p:
                 music_on = 1 - music_on;
@@ -109,26 +122,32 @@ main(int argc, char **argv)
             break;
         case MNCL_EVENT_PRERENDER:
             if (e->value.self) {
-                update(e->value.self);
+                if (destroy_something) {
+                    mncl_destroy_object(e->value.self);
+                    destroy_something = 0;
+                } else {
+                    update(e->value.self);
+                }
             } else if (countdown > 0) {
                 if (--countdown == 0) {
-                    done = 1;
+                    mncl_post_quit();
                 }
             }
             break;
         case MNCL_EVENT_RENDER:
             if (!e->value.self) {
                 MNCL_DATA *insts;
-                mncl_draw_rect(132, 152, 503, 176, 128, 128, 128);
+                mncl_draw_rect(132, 131, 503, 218, 128, 128, 128);
                 insts = mncl_data_resource("instructions");
                 if (insts && insts->tag == MNCL_DATA_ARRAY) {
-                    int i, y = 156;
+                    int i, y = 135;
                     for (i = 0; i < insts->value.array.size; ++i) {
                         MNCL_DATA *val = insts->value.array.data[i];
                         mncl_draw_string(monospace, 136, y, (val && val->tag == MNCL_DATA_STRING) ? val->value.string : "(invalid datum)");
                         y += 21;
                     }
                 }
+                destroy_something = 0;
             }
             break;
         default:

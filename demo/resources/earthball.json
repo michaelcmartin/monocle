@@ -49,7 +49,9 @@
                     "traits": ["pre-render", "render"] }
     },
     "data": {
-        "instructions": ["B to change background color",
+        "instructions": ["C to create a new planet",
+                         "D to destroy a planet",
+                         "B to change background color",
                          "P to pause/resume music",
                          "T to toggle and test fullscreen",
                          "SPACE to play loud sound effect",
