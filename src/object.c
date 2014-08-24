@@ -349,7 +349,7 @@ object_begin(MNCL_EVENT_TYPE which)
     /* sync_object_trees() will clear out pending_destruction so we
      * don't have to check it here like we do in object_next() */
     sync_object_trees();
-    /* TODO: Cache these results */
+    /* TODO: Cache these results, maybe, for speed? */
     switch(which) {
     case MNCL_EVENT_PREINPUT:
         current_iter = tree_minimum(&subscribers[mncl_get_trait("pre-input")].objs);
@@ -375,12 +375,9 @@ object_next(void)
 {
     while (current_iter) {
         current_iter = tree_next(current_iter);
-        if (!tree_find(&pending_destruction, current_iter, objcmp)) {
-            break;
+        if (current_iter && !tree_find(&pending_destruction, current_iter, objcmp)) {
+            return &((MNCL_OBJECT_NODE *)current_iter)->obj->object;
         }
-    }
-    if (current_iter) {
-        return &((MNCL_OBJECT_NODE *)current_iter)->obj->object;
     }
     return NULL;
 }
