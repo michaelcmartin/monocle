@@ -301,6 +301,10 @@ filesystem_get_resource(const char *pathbase, const char *resourcename)
     size_t size;
     MNCL_RAW *result;
 
+    /* Check for path traversal silliness */
+    if ((resourcename[0] == '.' && resourcename[1] == '.') || strstr(resourcename, "/..")) {
+        return NULL;
+    }
     /* Distressingly, it's kind of easier and safer to roll our own
      * combination of strncpy and strncat than to try to coerce the C
      * library to do what we need */
@@ -321,10 +325,6 @@ filesystem_get_resource(const char *pathbase, const char *resourcename)
         }
     }
     buf[PATH_MAX-1] = 0;
-    /* Check for path traversal silliness */
-    if ((buf[0] == '.' && buf[1] == '.') || strstr(buf, "/..")) {
-        return NULL;
-    }
     f = fopen(buf, "rb");
     if (!f) {
         return NULL;
