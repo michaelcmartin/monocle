@@ -91,6 +91,12 @@ static TREE_NODE *current_iter = NULL;
 static TREE_NODE *collision_other_iter = NULL;
 static unsigned int *collision_trait_iter = NULL;
 
+/* Point intersection iteration can happen while processing other
+ * events, so its iterator needs to be kept separate from the other
+ * two. */
+static TREE_NODE *point_collision_iter = NULL;
+static float point_collision_x = 0.0f, point_collision_y = 0.0f;
+
 static void
 ensure_basic_traits(void)
 {
@@ -379,6 +385,41 @@ object_next(void)
             return &((MNCL_OBJECT_NODE *)current_iter)->obj->object;
         }
     }
+    return NULL;
+}
+
+MNCL_OBJECT *
+mncl_object_at_point_begin(float x, float y, unsigned int trait)
+{
+    if (trait >= num_traits) {
+        return NULL;
+    }
+    point_collision_iter = tree_minimum(&subscribers[trait].objs);
+    point_collision_x = x;
+    point_collision_y = y;
+    return mncl_object_at_point_next();
+}
+
+MNCL_OBJECT *
+mncl_object_at_point_next(void)
+{
+    while (point_collision_iter) {
+        MNCL_OBJECT *self = &((MNCL_OBJECT_NODE *)point_collision_iter)->obj->object;
+        float s_left = self->x + self->sprite->hit_x;
+        float s_right = self->x + self->sprite->hit_x + self->sprite->hit_w;
+        float s_top = self->y + self->sprite->hit_y;
+        float s_bottom = self->y + self->sprite->hit_y + self->sprite->hit_h;
+        /* We've got the data we need, so iterate past it; we want
+         * to leave this function with the iterator pointing at
+         * the next value to check, not at the most recent
+         * success */
+        point_collision_iter = tree_next(point_collision_iter);
+        if (point_collision_x >= s_left && point_collision_x <= s_right &&
+                point_collision_y >= s_top && point_collision_y <= s_bottom) {
+            return self;
+        }
+    }
+    /* We fell off the end. We're done. */
     return NULL;
 }
 

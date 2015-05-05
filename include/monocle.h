@@ -196,6 +196,9 @@ extern MONOCULAR void mncl_destroy_object(MNCL_OBJECT *obj);
 extern MONOCULAR void mncl_object_set_depth(MNCL_OBJECT *object, int depth);
 extern MONOCULAR unsigned int mncl_get_trait(const char *trait);
 
+extern MONOCULAR MNCL_OBJECT *mncl_object_at_point_begin(float x, float y, unsigned int trait_id);
+extern MONOCULAR MNCL_OBJECT *mncl_object_at_point_next(void);
+
 /* Event component */
 
 typedef enum {
