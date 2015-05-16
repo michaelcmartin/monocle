@@ -22,9 +22,25 @@ typedef struct struct_MNCL_FRAME {
     int x, y;
 } MNCL_FRAME;
 
+enum {
+    MNCL_HITBOX_BOX,
+    MNCL_HITBOX_CIRCLE,
+    MNCL_HITBOX_MASK
+};
+
+typedef struct struct_MNCL_HITBOX {
+    int shape;
+    union {
+        struct { int x, y, w, h; } box;
+        struct { int x, y, r; } circle;
+        struct { unsigned char *pixels; int w, h; } mask;
+    } hit;
+} MNCL_HITBOX;
+
 struct struct_MNCL_SPRITE {
-    int w, h, hot_x, hot_y, hit_x, hit_y, hit_w, hit_h;
+    int w, h, hot_x, hot_y;
     int nframes;
+    MNCL_HITBOX hit;
     MNCL_FRAME frames[0];
 };
 

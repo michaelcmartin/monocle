@@ -63,9 +63,10 @@ sprite_alloc(MNCL_DATA *arg)
         result->h = (int)mncl_data_h->value.number;
         /* Some sensible defaults for optional values */
         result->hot_x = result->hot_y = 0;
-        result->hit_x = result->hit_y = 0;
-        result->hit_w = result->w;
-        result->hit_h = result->h;
+        result->hit.shape = MNCL_HITBOX_BOX;
+        result->hit.hit.box.x = result->hit.hit.box.y = 0;
+        result->hit.hit.box.w = result->w;
+        result->hit.hit.box.h = result->h;
         /* Then override those if they were in the object */
         if (hot_x && hot_x->tag == MNCL_DATA_NUMBER) {
             result->hot_x = (int)hot_x->value.number;
@@ -74,16 +75,16 @@ sprite_alloc(MNCL_DATA *arg)
             result->hot_y = (int)hot_y->value.number;
         }
         if (hit_x && hit_x->tag == MNCL_DATA_NUMBER) {
-            result->hit_x = (int)hit_x->value.number;
+            result->hit.hit.box.x = (int)hit_x->value.number;
         }
         if (hit_y && hit_y->tag == MNCL_DATA_NUMBER) {
-            result->hit_y = (int)hit_y->value.number;
+            result->hit.hit.box.y = (int)hit_y->value.number;
         }
         if (hit_w && hit_w->tag == MNCL_DATA_NUMBER) {
-            result->hit_w = (int)hit_w->value.number;
+            result->hit.hit.box.w = (int)hit_w->value.number;
         }
         if (hit_h && hit_h->tag == MNCL_DATA_NUMBER) {
-            result->hit_h = (int)hit_h->value.number;
+            result->hit.hit.box.h = (int)hit_h->value.number;
         }
         for (i = 0; i < result->nframes; ++i) {
             MNCL_DATA *mncl_data_f = mncl_data_fr->value.array.data[i];

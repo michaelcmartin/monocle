@@ -388,6 +388,58 @@ object_next(void)
     return NULL;
 }
 
+static int
+point_in_object(float x, float y, MNCL_OBJECT *o)
+{
+    MNCL_HITBOX *h;
+    if (!o || !o->sprite) {
+        return 0;
+    }
+    h = &o->sprite->hit;
+    switch(h->shape) {
+    case MNCL_HITBOX_BOX:
+    {
+        float h_left = o->x + h->hit.box.x;
+        float h_right = h_left + h->hit.box.w;
+        float h_top = o->y + h->hit.box.y;
+        float h_bottom = h_top + h->hit.box.h;
+        return x >= h_left && x < h_right && y >= h_top && y < h_bottom;
+    }
+    case MNCL_HITBOX_CIRCLE:
+    {
+        float dx = x - (o->x + h->hit.circle.x);
+        float dy = y - (o->y + h->hit.circle.y);
+        float r = h->hit.circle.r;
+        return (dx*dx+dy*dy) <= (r*r);
+    }
+    default:
+        /* TODO: Pixel mask test */
+        break;
+    }
+    return 0;
+}
+
+static int
+box_box_collide(MNCL_OBJECT *self, MNCL_OBJECT *other)
+{
+    // Internal function, assumes hitbox unions have already been
+    // checked, and in particular that self, other, and their "sprite"
+    // members are non-NULL
+    MNCL_HITBOX *sh = &self->sprite->hit;
+    MNCL_HITBOX *oh = &other->sprite->hit;
+    float s_left = self->x + sh->hit.box.x;
+    float s_right = s_left + sh->hit.box.w;
+    float s_top = self->y + sh->hit.box.y;
+    float s_bottom = s_top + sh->hit.box.h;
+    float o_left = other->x + oh->hit.box.x;
+    float o_right = o_left + oh->hit.box.w;
+    float o_top = other->y + oh->hit.box.y;
+    float o_bottom = o_top + oh->hit.box.h;
+
+    return (s_right > o_left) && (s_left < o_right) &&
+        (s_bottom > o_top) && (s_top < o_bottom);
+}
+
 MNCL_OBJECT *
 mncl_object_at_point_begin(float x, float y, unsigned int trait)
 {
@@ -405,17 +457,16 @@ mncl_object_at_point_next(void)
 {
     while (point_collision_iter) {
         MNCL_OBJECT *self = &((MNCL_OBJECT_NODE *)point_collision_iter)->obj->object;
-        float s_left = self->x + self->sprite->hit_x;
-        float s_right = self->x + self->sprite->hit_x + self->sprite->hit_w;
-        float s_top = self->y + self->sprite->hit_y;
-        float s_bottom = self->y + self->sprite->hit_y + self->sprite->hit_h;
+        int hit = 0;
+        if (!tree_find(&pending_destruction, point_collision_iter, objcmp)) {
+            hit = point_in_object(point_collision_x, point_collision_y, self);
+        }
         /* We've got the data we need, so iterate past it; we want
          * to leave this function with the iterator pointing at
          * the next value to check, not at the most recent
          * success */
         point_collision_iter = tree_next(point_collision_iter);
-        if (point_collision_x >= s_left && point_collision_x <= s_right &&
-                point_collision_y >= s_top && point_collision_y <= s_bottom) {
+        if (hit) {
             return self;
         }
     }
@@ -495,19 +546,9 @@ collision_next(MNCL_COLLISION *collision)
             !tree_find(&pending_destruction, collision_other_iter, objcmp)) {
             MNCL_OBJECT *self = &((MNCL_OBJECT_NODE *)current_iter)->obj->object;
             MNCL_OBJECT *other = &((MNCL_OBJECT_NODE *)collision_other_iter)->obj->object;
-            if (self != other) {
+            if (self != other && self->sprite && other->sprite) {
                 /* For now we've only got box-style collisions */
-                float s_left = self->x + self->sprite->hit_x;
-                float s_right = self->x + self->sprite->hit_x + self->sprite->hit_w;
-                float s_top = self->y + self->sprite->hit_y;
-                float s_bottom = self->y + self->sprite->hit_y + self->sprite->hit_h;
-                float o_left = other->x + other->sprite->hit_x;
-                float o_right = other->x + other->sprite->hit_x + other->sprite->hit_w;
-                float o_top = other->y + other->sprite->hit_y;
-                float o_bottom = other->y + other->sprite->hit_y + other->sprite->hit_h;
-
-                if ((s_right > o_left) && (s_left < o_right) &&
-                    (s_bottom > o_top) && (s_top < o_bottom)) {
+                if (box_box_collide(self, other)) {
                     collision->self = self;
                     collision->other = other;
                     collision->trait_id = *collision_trait_iter;
